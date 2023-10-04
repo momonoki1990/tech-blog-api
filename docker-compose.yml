@@ -1,0 +1,51 @@
+version: "3.8"
+
+services:
+  tech-blog-api:
+    # https://github.com/ariseanalytics/air_sample/blob/main/docker-compose.yaml
+    depends_on:
+      - db
+    build:
+      context: .
+      dockerfile: Dockerfile.local
+    container_name: tech-blog-api
+    hostname: tech-blog-api
+    networks:
+      - mynet
+    ports:
+      - 1323:1323
+    volumes:
+      - ./:/app/
+    working_dir: /app
+    tty: true
+    command: sh -c 'go mod tidy && air'
+    environment:
+      - DB_HOST=db
+      - DB_DATABASE=tech_blog
+      - DB_PORT=3306
+      - DB_USER=docker
+      - DB_PASSWORD=dockerpass
+
+    # deploy:
+    #   restart_policy:
+    #     condition: on-failure
+  db:
+    image: mysql:8.1.0
+    container_name: db
+    hostname: db
+    networks:
+      - mynet
+    ports:
+      - 3306:3306
+    volumes:
+      - ./docker/db/data:/var/lib/mysql
+      - ./docker/db/conf:/etc/mysql/conf.d
+    environment:
+      MYSQL_ROOT_PASSWORD: password
+      MYSQL_DATABASE: tech_blog
+      MYSQL_USER: docker
+      MYSQL_PASSWORD: dockerpass
+      TZ: "Asia/Tokyo"
+networks:
+  mynet:
+    driver: bridge

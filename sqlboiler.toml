@@ -1,0 +1,10 @@
+[mysql]
+  dbname     = "tech_blog"
+  host       = "127.0.0.1"
+  port       = 3306
+  user       = "docker"
+  pass       = "dockerpass"
+  sslmode    = "false"
+  whitelist = [
+    "categories"
+  ]

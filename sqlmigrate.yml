@@ -1,0 +1,5 @@
+local:
+  dialect: mysql
+  datasource: docker:dockerpass@tcp(localhost:3306)/tech_blog?parseTime=true
+  dir: migrations/mysql
+  table: migrations
