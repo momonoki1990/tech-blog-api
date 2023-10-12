@@ -6,5 +6,8 @@
   pass       = "dockerpass"
   sslmode    = "false"
   whitelist = [
-    "categories"
+    "categories",
+    "articles",
+    "tags",
+    "taggings"
   ]

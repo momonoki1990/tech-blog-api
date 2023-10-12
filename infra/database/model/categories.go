@@ -24,9 +24,11 @@ import (
 
 // Category is an object representing the database table.
 type Category struct {
-	ID           string   `boil:"id" json:"id" toml:"id" yaml:"id"`
-	Name         string   `boil:"name" json:"name" toml:"name" yaml:"name"`
-	DisplayOrder null.Int `boil:"display_order" json:"display_order,omitempty" toml:"display_order" yaml:"display_order,omitempty"`
+	ID           string    `boil:"id" json:"id" toml:"id" yaml:"id"`
+	Name         string    `boil:"name" json:"name" toml:"name" yaml:"name"`
+	DisplayOrder null.Int  `boil:"display_order" json:"display_order,omitempty" toml:"display_order" yaml:"display_order,omitempty"`
+	CreatedAt    time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
+	UpdatedAt    time.Time `boil:"updated_at" json:"updated_at" toml:"updated_at" yaml:"updated_at"`
 
 	R *categoryR `boil:"-" json:"-" toml:"-" yaml:"-"`
 	L categoryL  `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -36,48 +38,31 @@ var CategoryColumns = struct {
 	ID           string
 	Name         string
 	DisplayOrder string
+	CreatedAt    string
+	UpdatedAt    string
 }{
 	ID:           "id",
 	Name:         "name",
 	DisplayOrder: "display_order",
+	CreatedAt:    "created_at",
+	UpdatedAt:    "updated_at",
 }
 
 var CategoryTableColumns = struct {
 	ID           string
 	Name         string
 	DisplayOrder string
+	CreatedAt    string
+	UpdatedAt    string
 }{
 	ID:           "categories.id",
 	Name:         "categories.name",
 	DisplayOrder: "categories.display_order",
+	CreatedAt:    "categories.created_at",
+	UpdatedAt:    "categories.updated_at",
 }
 
 // Generated where
-
-type whereHelperstring struct{ field string }
-
-func (w whereHelperstring) EQ(x string) qm.QueryMod    { return qmhelper.Where(w.field, qmhelper.EQ, x) }
-func (w whereHelperstring) NEQ(x string) qm.QueryMod   { return qmhelper.Where(w.field, qmhelper.NEQ, x) }
-func (w whereHelperstring) LT(x string) qm.QueryMod    { return qmhelper.Where(w.field, qmhelper.LT, x) }
-func (w whereHelperstring) LTE(x string) qm.QueryMod   { return qmhelper.Where(w.field, qmhelper.LTE, x) }
-func (w whereHelperstring) GT(x string) qm.QueryMod    { return qmhelper.Where(w.field, qmhelper.GT, x) }
-func (w whereHelperstring) GTE(x string) qm.QueryMod   { return qmhelper.Where(w.field, qmhelper.GTE, x) }
-func (w whereHelperstring) LIKE(x string) qm.QueryMod  { return qm.Where(w.field+" LIKE ?", x) }
-func (w whereHelperstring) NLIKE(x string) qm.QueryMod { return qm.Where(w.field+" NOT LIKE ?", x) }
-func (w whereHelperstring) IN(slice []string) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereIn(fmt.Sprintf("%s IN ?", w.field), values...)
-}
-func (w whereHelperstring) NIN(slice []string) qm.QueryMod {
-	values := make([]interface{}, 0, len(slice))
-	for _, value := range slice {
-		values = append(values, value)
-	}
-	return qm.WhereNotIn(fmt.Sprintf("%s NOT IN ?", w.field), values...)
-}
 
 type whereHelpernull_Int struct{ field string }
 
@@ -121,10 +106,14 @@ var CategoryWhere = struct {
 	ID           whereHelperstring
 	Name         whereHelperstring
 	DisplayOrder whereHelpernull_Int
+	CreatedAt    whereHelpertime_Time
+	UpdatedAt    whereHelpertime_Time
 }{
 	ID:           whereHelperstring{field: "`categories`.`id`"},
 	Name:         whereHelperstring{field: "`categories`.`name`"},
 	DisplayOrder: whereHelpernull_Int{field: "`categories`.`display_order`"},
+	CreatedAt:    whereHelpertime_Time{field: "`categories`.`created_at`"},
+	UpdatedAt:    whereHelpertime_Time{field: "`categories`.`updated_at`"},
 }
 
 // CategoryRels is where relationship names are stored.
@@ -144,9 +133,9 @@ func (*categoryR) NewStruct() *categoryR {
 type categoryL struct{}
 
 var (
-	categoryAllColumns            = []string{"id", "name", "display_order"}
+	categoryAllColumns            = []string{"id", "name", "display_order", "created_at", "updated_at"}
 	categoryColumnsWithoutDefault = []string{"id", "name"}
-	categoryColumnsWithDefault    = []string{"display_order"}
+	categoryColumnsWithDefault    = []string{"display_order", "created_at", "updated_at"}
 	categoryPrimaryKeyColumns     = []string{"id"}
 	categoryGeneratedColumns      = []string{}
 )
@@ -478,6 +467,16 @@ func (o *Category) Insert(ctx context.Context, exec boil.ContextExecutor, column
 	}
 
 	var err error
+	if !boil.TimestampsAreSkipped(ctx) {
+		currTime := time.Now().In(boil.GetLocation())
+
+		if o.CreatedAt.IsZero() {
+			o.CreatedAt = currTime
+		}
+		if o.UpdatedAt.IsZero() {
+			o.UpdatedAt = currTime
+		}
+	}
 
 	if err := o.doBeforeInsertHooks(ctx, exec); err != nil {
 		return err
@@ -569,6 +568,12 @@ CacheNoHooks:
 // See boil.Columns.UpdateColumnSet documentation to understand column list inference for updates.
 // Update does not automatically update the record in case of default values. Use .Reload() to refresh the records.
 func (o *Category) Update(ctx context.Context, exec boil.ContextExecutor, columns boil.Columns) (int64, error) {
+	if !boil.TimestampsAreSkipped(ctx) {
+		currTime := time.Now().In(boil.GetLocation())
+
+		o.UpdatedAt = currTime
+	}
+
 	var err error
 	if err = o.doBeforeUpdateHooks(ctx, exec); err != nil {
 		return 0, err
@@ -695,6 +700,7 @@ func (o CategorySlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor,
 
 var mySQLCategoryUniqueColumns = []string{
 	"id",
+	"name",
 }
 
 // Upsert attempts an insert using an executor, and does an update or ignore on conflict.
@@ -702,6 +708,14 @@ var mySQLCategoryUniqueColumns = []string{
 func (o *Category) Upsert(ctx context.Context, exec boil.ContextExecutor, updateColumns, insertColumns boil.Columns) error {
 	if o == nil {
 		return errors.New("model: no categories provided for upsert")
+	}
+	if !boil.TimestampsAreSkipped(ctx) {
+		currTime := time.Now().In(boil.GetLocation())
+
+		if o.CreatedAt.IsZero() {
+			o.CreatedAt = currTime
+		}
+		o.UpdatedAt = currTime
 	}
 
 	if err := o.doBeforeUpsertHooks(ctx, exec); err != nil {

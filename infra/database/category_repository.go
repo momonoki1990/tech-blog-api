@@ -15,15 +15,15 @@ import (
 
 type CategoryRepository struct {
 	ctx context.Context
-	db *sql.DB
+	exec boil.ContextExecutor
 }
 
-func NewCategoryRepository(ctx context.Context,  db *sql.DB) repository.CategoryRepository {
-    return &CategoryRepository{ctx, db}
+func NewCategoryRepository(ctx context.Context,  exec boil.ContextExecutor) repository.CategoryRepository {
+    return &CategoryRepository{ctx, exec}
 }
 
 func (r *CategoryRepository)FindOneByName(name string) (*model.Category, error) {
-	dbCategories, err := dbModel.Categories(dbModel.CategoryWhere.Name.EQ(name)).One(r.ctx, r.db)
+	dbCategories, err := dbModel.Categories(dbModel.CategoryWhere.Name.EQ(name)).One(r.ctx, r.exec)
 	if err == sql.ErrNoRows {
 		return nil, nil
 	}
@@ -38,7 +38,7 @@ func (r *CategoryRepository)FindOneByName(name string) (*model.Category, error) 
 }
 
 func (r *CategoryRepository)FindOneById(id uuid.UUID) (*model.Category, error) {
-	dbCategory, err := dbModel.Categories(dbModel.CategoryWhere.ID.EQ(id.String())).One(r.ctx, r.db)
+	dbCategory, err := dbModel.Categories(dbModel.CategoryWhere.ID.EQ(id.String())).One(r.ctx, r.exec)
 	if err != nil {
 		return nil, err
 	}
@@ -50,17 +50,17 @@ func (r *CategoryRepository)FindOneById(id uuid.UUID) (*model.Category, error) {
 }
 
 func (r *CategoryRepository) Find() ([]*model.Category, error) {
-	dbCategories, err := dbModel.Categories().All(r.ctx, r.db)
+	dbCategories, err := dbModel.Categories().All(r.ctx, r.exec)
 	if err != nil {
 		return nil, err
 	}
-	entities, err := toCategories(dbCategories)
-	return entities, nil
+	categories, err := toCategories(dbCategories)
+	return categories, nil
 }
 
 func (r *CategoryRepository) Insert(c *model.Category) (error) {
 	dbCategory := toDbCategory(c)
-	err := dbCategory.Insert(r.ctx, r.db, boil.Infer())
+	err := dbCategory.Insert(r.ctx, r.exec, boil.Infer())
 	if err != nil {
 		return err
 	}
@@ -68,7 +68,7 @@ func (r *CategoryRepository) Insert(c *model.Category) (error) {
 }
 
 func (r *CategoryRepository) Update(c *model.Category) (error) {
-	dbCategory, err := dbModel.FindCategory(r.ctx, r.db, c.Id.String())
+	dbCategory, err := dbModel.FindCategory(r.ctx, r.exec, c.Id.String())
 	if err != nil {
 		return err
 	}
@@ -77,16 +77,19 @@ func (r *CategoryRepository) Update(c *model.Category) (error) {
 	}
 	dbCategory.Name = c.Name
 	dbCategory.DisplayOrder = null.IntFrom(c.DisplayOrder)
-	dbCategory.Update(r.ctx, r.db, boil.Infer())
+	dbCategory.Update(r.ctx, r.exec, boil.Infer())
 	return nil
 }
 
 func (r *CategoryRepository) Delete(id uuid.UUID) (error) {
-	dbCategory, err := dbModel.FindCategory(r.ctx, r.db, id.String())
+	dbCategory, err := dbModel.FindCategory(r.ctx, r.exec, id.String())
 	if err != nil {
 		return err
 	}
-	dbCategory.Delete(r.ctx, r.db)
+	if dbCategory == nil {
+		return errors.New("対象のカテゴリが見つかりません")
+	}
+	dbCategory.Delete(r.ctx, r.exec)
 	return nil
 }
 
@@ -104,15 +107,15 @@ func toCategory(d *dbModel.Category) (*model.Category, error) {
 }
 
 func toCategories(dbCategories []*dbModel.Category) ([]*model.Category, error) {
-	var entities []*model.Category
+	var categories []*model.Category
 	for _, v := range dbCategories {
 		category, err := toCategory(v)
 		if err != nil {
 			return nil, err
 		}
-		entities = append(entities, category)
+		categories = append(categories, category)
 	}
-	return entities, nil
+	return categories, nil
 }
 
 func toDbCategory(e *model.Category) (*dbModel.Category) {

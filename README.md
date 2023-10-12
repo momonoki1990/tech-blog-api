@@ -10,6 +10,7 @@ $ docker-compose up
 ## sql-migrate
 
 ```
+$ sql-migrate new -env="local" -config=sqlmigrate.yml create_articles_table
 $ sql-migrate up -env="local" -config=sqlmigrate.yml
 $ sql-migrate down -env="local" -config=sqlmigrate.yml
 ```
@@ -17,5 +18,11 @@ $ sql-migrate down -env="local" -config=sqlmigrate.yml
 ## sql-boiler
 
 ```
-$ sqlboiler mysql -c sqlboiler.toml -o infra/database/db_model -p db_model --no-tests --wipe
+$ sqlboiler mysql -c sqlboiler.toml -o infra/database/model -p model --no-tests --wipe
+```
+
+## Test
+
+```
+$ docker-compose exec tech-blog-api go test -v ./...
 ```

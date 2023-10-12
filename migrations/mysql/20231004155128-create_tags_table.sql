@@ -1,0 +1,10 @@
+
+-- +migrate Up
+CREATE TABLE IF NOT EXISTS tags (
+    id CHAR(36) NOT NULL PRIMARY KEY,
+    name VARCHAR(255) NOT NULL UNIQUE,
+    created_at DATETIME NOT NULL DEFAULT CURRENT_TIMESTAMP
+);
+
+-- +migrate Down
+DROP TABLE IF EXISTS tags;

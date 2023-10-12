@@ -35,7 +35,7 @@ func connectToDb() (*sql.DB) {
 
 func main() {
     db := connectToDb()
-    ctx := context.Background()
+    ctx := context.TODO()
     e := echo.New()
     stage := flag.String("stage", "prd", "Stage in which the application runs")
     flag.Parse()

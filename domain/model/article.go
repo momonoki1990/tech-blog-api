@@ -1,8 +1,13 @@
 package model
 
-import "time"
+import (
+	"time"
+
+	"github.com/google/uuid"
+)
 
 type Tag struct {
+	Id uuid.UUID
 	Name string
 }
 
@@ -25,20 +30,22 @@ func (s Status) String() string {
 }
 
 type Article struct {
+	Id uuid.UUID
 	Title string
 	Content string
-	Category Category
+	CategoryId uuid.UUID
 	Tags []Tag
 	PublishedAt *time.Time
+	Status Status
 	CreatedAt time.Time
 	UpdatedAt time.Time
-	Status Status
 }
 
-func NewArticle (title string, content string, category Category, tagNames []string, shouldPublish bool) (*Article, error) {
+func NewArticle (title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (*Article, error) {
 	var tags []Tag
 	for i := 0; i < len(tagNames); i++ {
 		tag := Tag{
+			Id: uuid.New(),
 			Name: tagNames[i],
 		}
 		tags = append(tags, tag)
@@ -51,15 +58,16 @@ func NewArticle (title string, content string, category Category, tagNames []str
 		status = Published
 	}
 
-	a := &Article{
+	article := &Article{
+		Id: uuid.New(),
 		Title: title,
 		Content: content,
-		Category: category,
+		CategoryId: categoryId,
 		Tags: tags,
+		Status: status,
 		PublishedAt: publishedAt,
 		CreatedAt: time.Now(),
 		UpdatedAt: time.Now(),
-		Status: status,
 	}
-	return a, nil
+	return article, nil
 }

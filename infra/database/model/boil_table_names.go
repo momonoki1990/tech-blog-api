@@ -4,7 +4,13 @@
 package model
 
 var TableNames = struct {
+	Articles   string
 	Categories string
+	Taggings   string
+	Tags       string
 }{
+	Articles:   "articles",
 	Categories: "categories",
+	Taggings:   "taggings",
+	Tags:       "tags",
 }
