@@ -171,19 +171,29 @@ var ArticleWhere = struct {
 
 // ArticleRels is where relationship names are stored.
 var ArticleRels = struct {
+	Category string
 	Taggings string
 }{
+	Category: "Category",
 	Taggings: "Taggings",
 }
 
 // articleR is where relationships are stored.
 type articleR struct {
+	Category *Category    `boil:"Category" json:"Category" toml:"Category" yaml:"Category"`
 	Taggings TaggingSlice `boil:"Taggings" json:"Taggings" toml:"Taggings" yaml:"Taggings"`
 }
 
 // NewStruct creates a new relationship struct
 func (*articleR) NewStruct() *articleR {
 	return &articleR{}
+}
+
+func (r *articleR) GetCategory() *Category {
+	if r == nil {
+		return nil
+	}
+	return r.Category
 }
 
 func (r *articleR) GetTaggings() TaggingSlice {
@@ -482,6 +492,17 @@ func (q articleQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bo
 	return count > 0, nil
 }
 
+// Category pointed to by the foreign key.
+func (o *Article) Category(mods ...qm.QueryMod) categoryQuery {
+	queryMods := []qm.QueryMod{
+		qm.Where("`id` = ?", o.CategoryID),
+	}
+
+	queryMods = append(queryMods, mods...)
+
+	return Categories(queryMods...)
+}
+
 // Taggings retrieves all the tagging's Taggings with an executor.
 func (o *Article) Taggings(mods ...qm.QueryMod) taggingQuery {
 	var queryMods []qm.QueryMod
@@ -494,6 +515,126 @@ func (o *Article) Taggings(mods ...qm.QueryMod) taggingQuery {
 	)
 
 	return Taggings(queryMods...)
+}
+
+// LoadCategory allows an eager lookup of values, cached into the
+// loaded structs of the objects. This is for an N-1 relationship.
+func (articleL) LoadCategory(ctx context.Context, e boil.ContextExecutor, singular bool, maybeArticle interface{}, mods queries.Applicator) error {
+	var slice []*Article
+	var object *Article
+
+	if singular {
+		var ok bool
+		object, ok = maybeArticle.(*Article)
+		if !ok {
+			object = new(Article)
+			ok = queries.SetFromEmbeddedStruct(&object, &maybeArticle)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", object, maybeArticle))
+			}
+		}
+	} else {
+		s, ok := maybeArticle.(*[]*Article)
+		if ok {
+			slice = *s
+		} else {
+			ok = queries.SetFromEmbeddedStruct(&slice, maybeArticle)
+			if !ok {
+				return errors.New(fmt.Sprintf("failed to set %T from embedded struct %T", slice, maybeArticle))
+			}
+		}
+	}
+
+	args := make([]interface{}, 0, 1)
+	if singular {
+		if object.R == nil {
+			object.R = &articleR{}
+		}
+		args = append(args, object.CategoryID)
+
+	} else {
+	Outer:
+		for _, obj := range slice {
+			if obj.R == nil {
+				obj.R = &articleR{}
+			}
+
+			for _, a := range args {
+				if a == obj.CategoryID {
+					continue Outer
+				}
+			}
+
+			args = append(args, obj.CategoryID)
+
+		}
+	}
+
+	if len(args) == 0 {
+		return nil
+	}
+
+	query := NewQuery(
+		qm.From(`categories`),
+		qm.WhereIn(`categories.id in ?`, args...),
+	)
+	if mods != nil {
+		mods.Apply(query)
+	}
+
+	results, err := query.QueryContext(ctx, e)
+	if err != nil {
+		return errors.Wrap(err, "failed to eager load Category")
+	}
+
+	var resultSlice []*Category
+	if err = queries.Bind(results, &resultSlice); err != nil {
+		return errors.Wrap(err, "failed to bind eager loaded slice Category")
+	}
+
+	if err = results.Close(); err != nil {
+		return errors.Wrap(err, "failed to close results of eager load for categories")
+	}
+	if err = results.Err(); err != nil {
+		return errors.Wrap(err, "error occurred during iteration of eager loaded relations for categories")
+	}
+
+	if len(categoryAfterSelectHooks) != 0 {
+		for _, obj := range resultSlice {
+			if err := obj.doAfterSelectHooks(ctx, e); err != nil {
+				return err
+			}
+		}
+	}
+
+	if len(resultSlice) == 0 {
+		return nil
+	}
+
+	if singular {
+		foreign := resultSlice[0]
+		object.R.Category = foreign
+		if foreign.R == nil {
+			foreign.R = &categoryR{}
+		}
+		foreign.R.Articles = append(foreign.R.Articles, object)
+		return nil
+	}
+
+	for _, local := range slice {
+		for _, foreign := range resultSlice {
+			if local.CategoryID == foreign.ID {
+				local.R.Category = foreign
+				if foreign.R == nil {
+					foreign.R = &categoryR{}
+				}
+				foreign.R.Articles = append(foreign.R.Articles, local)
+				break
+			}
+		}
+	}
+
+	return nil
 }
 
 // LoadTaggings allows an eager lookup of values, cached into the
@@ -605,6 +746,53 @@ func (articleL) LoadTaggings(ctx context.Context, e boil.ContextExecutor, singul
 				break
 			}
 		}
+	}
+
+	return nil
+}
+
+// SetCategory of the article to the related item.
+// Sets o.R.Category to related.
+// Adds o to related.R.Articles.
+func (o *Article) SetCategory(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Category) error {
+	var err error
+	if insert {
+		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
+			return errors.Wrap(err, "failed to insert into foreign table")
+		}
+	}
+
+	updateQuery := fmt.Sprintf(
+		"UPDATE `articles` SET %s WHERE %s",
+		strmangle.SetParamNames("`", "`", 0, []string{"category_id"}),
+		strmangle.WhereClause("`", "`", 0, articlePrimaryKeyColumns),
+	)
+	values := []interface{}{related.ID, o.ID}
+
+	if boil.IsDebug(ctx) {
+		writer := boil.DebugWriterFrom(ctx)
+		fmt.Fprintln(writer, updateQuery)
+		fmt.Fprintln(writer, values)
+	}
+	if _, err = exec.ExecContext(ctx, updateQuery, values...); err != nil {
+		return errors.Wrap(err, "failed to update local table")
+	}
+
+	o.CategoryID = related.ID
+	if o.R == nil {
+		o.R = &articleR{
+			Category: related,
+		}
+	} else {
+		o.R.Category = related
+	}
+
+	if related.R == nil {
+		related.R = &categoryR{
+			Articles: ArticleSlice{o},
+		}
+	} else {
+		related.R.Articles = append(related.R.Articles, o)
 	}
 
 	return nil

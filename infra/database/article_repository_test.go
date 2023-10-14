@@ -44,6 +44,16 @@ func TestFindOneById(t *testing.T) {
 	n := time.Now()
 	now := n.Truncate(time.Second)
 
+	dbCategory1 := &dbModel.Category{
+		ID: "21111111-1111-1111-1111-111111111111",
+		Name: "Category1",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err := dbCategory1.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
+	
 	dbArticle1 := &dbModel.Article{
 		ID: "11111111-1111-1111-1111-111111111111",
 		Title: "Title1",
@@ -54,7 +64,7 @@ func TestFindOneById(t *testing.T) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	err := dbArticle1.Insert(ctx, tx, boil.Infer())
+	err = dbArticle1.Insert(ctx, tx, boil.Infer())
 	if err != nil {
 		panic(err)
 	}
@@ -230,6 +240,16 @@ func TestFind(t *testing.T) {
 	n := time.Now()
 	now := n.Truncate(time.Second)
 
+	dbCategory1 := &dbModel.Category{
+		ID: "21111111-1111-1111-1111-111111111111",
+		Name: "Category1",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err := dbCategory1.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
+
 	dbArticle1 := &dbModel.Article{
 		ID: "11111111-1111-1111-1111-111111111111",
 		Title: "Title1",
@@ -240,7 +260,7 @@ func TestFind(t *testing.T) {
 		CreatedAt: now,
 		UpdatedAt: now,
 	}
-	err := dbArticle1.Insert(ctx, tx, boil.Infer())
+	err = dbArticle1.Insert(ctx, tx, boil.Infer())
 	if err != nil {
 		panic(err)
 	}
@@ -266,7 +286,7 @@ func TestFind(t *testing.T) {
 		ID: "11111111-1111-1111-1111-111111111112",
 		Title: "Title2",
 		Content: "Content2",
-		CategoryID: "21111111-1111-1111-1111-111111111112",
+		CategoryID: "21111111-1111-1111-1111-111111111111",
 		PublishedAt: null.TimeFromPtr(nil),
 		Status: "Draft",
 		CreatedAt: now,
@@ -420,7 +440,16 @@ func TestInsert(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
-	// TODO: publishedがfalseの場合も用意する
+	dbCategory1 := &dbModel.Category{
+		ID: "11111111-1111-1111-1111-111111111111",
+		Name: "Category1",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err = dbCategory1.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
+
 	article1, err := model.NewArticle("Title1", "Content1", categoryId, []string{"Tag1", "Tag2"}, true)
 	if err != nil {
 		panic(err)
