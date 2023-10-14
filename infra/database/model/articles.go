@@ -628,7 +628,7 @@ func (o *Article) AddTaggings(ctx context.Context, exec boil.ContextExecutor, in
 				strmangle.SetParamNames("`", "`", 0, []string{"article_id"}),
 				strmangle.WhereClause("`", "`", 0, taggingPrimaryKeyColumns),
 			)
-			values := []interface{}{o.ID, rel.ArticleID, rel.TagID}
+			values := []interface{}{o.ID, rel.ArticleID, rel.TagName}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)

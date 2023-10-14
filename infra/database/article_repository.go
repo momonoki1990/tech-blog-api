@@ -3,7 +3,7 @@ package database
 import (
 	"context"
 	"errors"
-	"fmt"
+	"time"
 
 	"github.com/google/uuid"
 	"github.com/momonoki1990/tech-blog-api/domain/model"
@@ -47,9 +47,7 @@ func (r *ArticleRepository) Find() ([]*model.Article, error) {
 }
 
 func (r *ArticleRepository) Insert(c *model.Article) (error) {
-	fmt.Println("😈Insert called")
 	dbArticle, err := toDbArticle(c)
-	fmt.Println("😈After toDbArticle")
 	if err != nil {
 		return err
 	}
@@ -58,37 +56,18 @@ func (r *ArticleRepository) Insert(c *model.Article) (error) {
 		return err
 	}
 
-	dbTags1, err := dbModel.Tags().All(r.ctx, r.exec)
-	for _, v := range dbTags1 {
-		fmt.Println("😈dbTags1[i]", v)
-		fmt.Println("😈dbTags1[i].ID", v.ID)
-		fmt.Println("😈dbTags1[i].Name", v.Name)
-	}
 	dbTags:= toDbTags(c)
 	for _, v := range dbTags {
-		fmt.Println("😈dbTags[i]", v)
 		err = v.Upsert(r.ctx, r.exec, boil.Infer(), boil.Infer())
 		if err != nil {
-			fmt.Println("👹エラー起きてる", err)
 			return err
 		}
-	}
-	dbTags2, err := dbModel.Tags().All(r.ctx, r.exec)
-	for _, v := range dbTags2 {
-		fmt.Println("😈dbTags2[i]", v)
-		fmt.Println("😈dbTags2[i].ID", v.ID)
-		fmt.Println("😈dbTags2[i].Name", v.Name)
 	}
 	
 	dbTaggings := toDbTaggings(c)
 	for _, v := range dbTaggings {
-		fmt.Println("😈dbTaggings[i]", v)
-	}
-	for _, v := range dbTaggings {
-		fmt.Println(v.TagID)
 		err = v.Insert(r.ctx, r.exec, boil.Infer())
 		if err != nil {
-			fmt.Println(err)
 			return err
 		}
 	}
@@ -119,70 +98,63 @@ func (r *ArticleRepository) Update(a *model.Article) (error) {
 	}
 
 	// 元々のタグ付けと比較して、追加・削除されたタグごとに処理(タグマスタも必要に応じて追加・削除)
-	var foundTaggingTagIds []string
+	var foundTaggingTagNames []string
 	for _, v := range foundDbTaggings {
-		foundTaggingTagIds = append(foundTaggingTagIds, v.TagID)
+		foundTaggingTagNames = append(foundTaggingTagNames, v.TagName)
 	}
 
-	var tagIds []string
+	var tagNames []string
 	for _, v := range a.Tags {
-		tagIds = append(tagIds, v.Id.String())
+		tagNames = append(tagNames, v.Name)
 	}
 
-	var addedTagIds []string
-	var removedTagIds []string
+	var addedtagNames []string
+	var removedtagNames []string
 
-	for _, v := range tagIds {
+	for _, v := range tagNames {
 		included := false
-		for _, v2 := range foundTaggingTagIds {
+		for _, v2 := range foundTaggingTagNames {
 			if v == v2 {
 				included = true
 			}
 		}
 		if !included {
-			addedTagIds = append(addedTagIds, v)
+			addedtagNames = append(addedtagNames, v)
 		}
 	}
 
-	for _, v := range foundTaggingTagIds {
+	for _, v := range foundTaggingTagNames {
 		included := false
-		for _, v2 := range tagIds {
+		for _, v2 := range tagNames {
 			if v == v2 {
 				included = true
 			}
 		}
 		if !included {
-			removedTagIds = append(removedTagIds, v)
+			removedtagNames = append(removedtagNames, v)
 		}
 	}
 
-	for _, v := range addedTagIds {
-		foundTag, err := dbModel.Tags(dbModel.TagWhere.ID.EQ(v)).One(r.ctx, r.exec)
+	for _, v := range addedtagNames {
+		foundTag, err := dbModel.Tags(dbModel.TagWhere.Name.EQ(v)).One(r.ctx, r.exec)
 		if err != nil {
 			return err
 		}
 		if foundTag == nil {
-			var found model.Tag
-			for _, v2 := range a.Tags {
-				if v == v2.Id.String() {
-					found = v2
-				}
-			}
 			tag := &dbModel.Tag{
-				ID: v,
-				Name: found.Name,
+				Name: v,
 			}
 			tag.Insert(r.ctx, r.exec, boil.Infer())
 		}
 	}
 
-	for _, v := range removedTagIds {
-		foundTagging, err := dbModel.Taggings(dbModel.TaggingWhere.TagID.EQ(v), dbModel.TaggingWhere.ArticleID.NEQ(a.Id.String())).One(r.ctx, r.exec)
+	for _, v := range removedtagNames {
+		foundTagging, err := dbModel.Taggings(dbModel.TaggingWhere.TagName.EQ(v), dbModel.TaggingWhere.ArticleID.NEQ(a.Id.String())).One(r.ctx, r.exec)
 		if err != nil {
 			return err
 		}
 		if foundTagging == nil {
-			foundTag, err := dbModel.Tags(dbModel.TagWhere.ID.EQ(v)).One(r.ctx, r.exec)
+			foundTag, err := dbModel.Tags(dbModel.TagWhere.Name.EQ(v)).One(r.ctx, r.exec)
 			if err != nil {
 				return err
 			}
@@ -198,7 +170,7 @@ func (r *ArticleRepository) Update(a *model.Article) (error) {
 	for _, v := range a.Tags {
 		dbTagging := &dbModel.Tagging{
 			ArticleID: a.Id.String(),
-			TagID: v.Id.String(),
+			TagName: v.Name,
 		}
 		err := dbTagging.Insert(r.ctx, r.exec, boil.Infer())
 		if err != nil {
@@ -209,6 +181,7 @@ func (r *ArticleRepository) Update(a *model.Article) (error) {
 	return nil
 }
 
+// taggingも削除、tagもチェック
 func (r *ArticleRepository) Delete(id uuid.UUID) (error) {
 	dbArticle, err := dbModel.FindArticle(r.ctx, r.exec, id.String())
 	if err != nil {
@@ -248,7 +221,7 @@ func toDbStatus(s model.Status) (string, error) {
 
 func findTags(articleId string, r *ArticleRepository) ([]model.Tag, error) {
 	dbTags, err := dbModel.Tags(
-		qm.InnerJoin("taggings on taggings.tag_id = tags.id"),
+		qm.InnerJoin("taggings on taggings.tag_name = tags.name"),
 		qm.Where("taggings.article_id = ?", articleId),
 	).All(r.ctx, r.exec)
 	if err != nil {
@@ -256,12 +229,7 @@ func findTags(articleId string, r *ArticleRepository) ([]model.Tag, error) {
 	}
 	var tags []model.Tag
 	for _, v := range dbTags {
-		tagId, err := uuid.Parse(v.ID)
-		if err != nil {
-			return nil, err
-		}
 		tag := &model.Tag{
-			Id: tagId,
 			Name: v.Name,
 		}
 		tags = append(tags, *tag)
@@ -284,13 +252,19 @@ func toArticle(d *dbModel.Article, r *ArticleRepository) (*model.Article, error)
 	}
 	tags, err := findTags(d.ID, r)
 	
+	var publishedAt *time.Time
+	if d.PublishedAt.Valid {
+		publishedAt = &d.PublishedAt.Time
+	} else {
+		publishedAt = nil
+	}
 	article := &model.Article{
 		Id: id,
 		Title: d.Title,
 		Content: d.Content,
 		CategoryId: categoryId,
 		Tags: tags,
-		PublishedAt: &d.PublishedAt.Time,
+		PublishedAt: publishedAt,
 		Status: *status,
 		CreatedAt: d.CreatedAt,
 		UpdatedAt: d.UpdatedAt,
@@ -314,20 +288,24 @@ func toArticles(dbArticles []*dbModel.Article, r *ArticleRepository) ([]*model.A
 
 func toDbArticle(e *model.Article) (*dbModel.Article, error) {
 	status, err := toDbStatus(e.Status)
-	fmt.Println("😈After toDbStatus called")
 	if err != nil {
 		return nil, err
 	}
 
+	var publishedAt null.Time
+	if e.PublishedAt == nil {
+		publishedAt = null.TimeFromPtr(nil)
+	} else {
+		publishedAt = null.TimeFromPtr(e.PublishedAt)
+	}
 	dbArticle := &dbModel.Article{
 		ID: e.Id.String(),
 		Title: e.Title,
 		Content: e.Content,
 		CategoryID: e.CategoryId.String(),
-		PublishedAt: null.TimeFromPtr(e.PublishedAt),
+		PublishedAt: publishedAt,
 		Status: status,
 	}
-	fmt.Println("😈After toDbStatus called2", dbArticle)
 	return dbArticle, nil
 }
 
@@ -336,7 +314,7 @@ func toDbTaggings(a *model.Article) ([]*dbModel.Tagging) {
 	for _, v := range a.Tags {
 		t := &dbModel.Tagging{
 			ArticleID: a.Id.String(),
-			TagID: v.Id.String(),
+			TagName: v.Name,
 		}
 		dbTaggings = append(dbTaggings, t)
 	}
@@ -348,7 +326,6 @@ func toDbTags(a *model.Article) ([]*dbModel.Tag) {
 	var dbTags []*dbModel.Tag
 	for _, v := range a.Tags {
 		t := &dbModel.Tag{
-			ID:  v.Id.String(),
 			Name: v.Name,
 		}
 		dbTags = append(dbTags, t)

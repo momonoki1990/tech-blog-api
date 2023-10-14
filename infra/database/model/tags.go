@@ -23,7 +23,6 @@ import (
 
 // Tag is an object representing the database table.
 type Tag struct {
-	ID        string    `boil:"id" json:"id" toml:"id" yaml:"id"`
 	Name      string    `boil:"name" json:"name" toml:"name" yaml:"name"`
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
@@ -32,21 +31,17 @@ type Tag struct {
 }
 
 var TagColumns = struct {
-	ID        string
 	Name      string
 	CreatedAt string
 }{
-	ID:        "id",
 	Name:      "name",
 	CreatedAt: "created_at",
 }
 
 var TagTableColumns = struct {
-	ID        string
 	Name      string
 	CreatedAt string
 }{
-	ID:        "tags.id",
 	Name:      "tags.name",
 	CreatedAt: "tags.created_at",
 }
@@ -54,25 +49,23 @@ var TagTableColumns = struct {
 // Generated where
 
 var TagWhere = struct {
-	ID        whereHelperstring
 	Name      whereHelperstring
 	CreatedAt whereHelpertime_Time
 }{
-	ID:        whereHelperstring{field: "`tags`.`id`"},
 	Name:      whereHelperstring{field: "`tags`.`name`"},
 	CreatedAt: whereHelpertime_Time{field: "`tags`.`created_at`"},
 }
 
 // TagRels is where relationship names are stored.
 var TagRels = struct {
-	Taggings string
+	TagNameTaggings string
 }{
-	Taggings: "Taggings",
+	TagNameTaggings: "TagNameTaggings",
 }
 
 // tagR is where relationships are stored.
 type tagR struct {
-	Taggings TaggingSlice `boil:"Taggings" json:"Taggings" toml:"Taggings" yaml:"Taggings"`
+	TagNameTaggings TaggingSlice `boil:"TagNameTaggings" json:"TagNameTaggings" toml:"TagNameTaggings" yaml:"TagNameTaggings"`
 }
 
 // NewStruct creates a new relationship struct
@@ -80,21 +73,21 @@ func (*tagR) NewStruct() *tagR {
 	return &tagR{}
 }
 
-func (r *tagR) GetTaggings() TaggingSlice {
+func (r *tagR) GetTagNameTaggings() TaggingSlice {
 	if r == nil {
 		return nil
 	}
-	return r.Taggings
+	return r.TagNameTaggings
 }
 
 // tagL is where Load methods for each relationship are stored.
 type tagL struct{}
 
 var (
-	tagAllColumns            = []string{"id", "name", "created_at"}
-	tagColumnsWithoutDefault = []string{"id", "name"}
+	tagAllColumns            = []string{"name", "created_at"}
+	tagColumnsWithoutDefault = []string{"name"}
 	tagColumnsWithDefault    = []string{"created_at"}
-	tagPrimaryKeyColumns     = []string{"id"}
+	tagPrimaryKeyColumns     = []string{"name"}
 	tagGeneratedColumns      = []string{}
 )
 
@@ -376,23 +369,23 @@ func (q tagQuery) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, 
 	return count > 0, nil
 }
 
-// Taggings retrieves all the tagging's Taggings with an executor.
-func (o *Tag) Taggings(mods ...qm.QueryMod) taggingQuery {
+// TagNameTaggings retrieves all the tagging's Taggings with an executor via tag_name column.
+func (o *Tag) TagNameTaggings(mods ...qm.QueryMod) taggingQuery {
 	var queryMods []qm.QueryMod
 	if len(mods) != 0 {
 		queryMods = append(queryMods, mods...)
 	}
 
 	queryMods = append(queryMods,
-		qm.Where("`taggings`.`tag_id`=?", o.ID),
+		qm.Where("`taggings`.`tag_name`=?", o.Name),
 	)
 
 	return Taggings(queryMods...)
 }
 
-// LoadTaggings allows an eager lookup of values, cached into the
+// LoadTagNameTaggings allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for a 1-M or N-M relationship.
-func (tagL) LoadTaggings(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTag interface{}, mods queries.Applicator) error {
+func (tagL) LoadTagNameTaggings(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTag interface{}, mods queries.Applicator) error {
 	var slice []*Tag
 	var object *Tag
 
@@ -423,7 +416,7 @@ func (tagL) LoadTaggings(ctx context.Context, e boil.ContextExecutor, singular b
 		if object.R == nil {
 			object.R = &tagR{}
 		}
-		args = append(args, object.ID)
+		args = append(args, object.Name)
 	} else {
 	Outer:
 		for _, obj := range slice {
@@ -432,12 +425,12 @@ func (tagL) LoadTaggings(ctx context.Context, e boil.ContextExecutor, singular b
 			}
 
 			for _, a := range args {
-				if a == obj.ID {
+				if a == obj.Name {
 					continue Outer
 				}
 			}
 
-			args = append(args, obj.ID)
+			args = append(args, obj.Name)
 		}
 	}
 
@@ -447,7 +440,7 @@ func (tagL) LoadTaggings(ctx context.Context, e boil.ContextExecutor, singular b
 
 	query := NewQuery(
 		qm.From(`taggings`),
-		qm.WhereIn(`taggings.tag_id in ?`, args...),
+		qm.WhereIn(`taggings.tag_name in ?`, args...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -478,24 +471,24 @@ func (tagL) LoadTaggings(ctx context.Context, e boil.ContextExecutor, singular b
 		}
 	}
 	if singular {
-		object.R.Taggings = resultSlice
+		object.R.TagNameTaggings = resultSlice
 		for _, foreign := range resultSlice {
 			if foreign.R == nil {
 				foreign.R = &taggingR{}
 			}
-			foreign.R.Tag = object
+			foreign.R.TagNameTag = object
 		}
 		return nil
 	}
 
 	for _, foreign := range resultSlice {
 		for _, local := range slice {
-			if local.ID == foreign.TagID {
-				local.R.Taggings = append(local.R.Taggings, foreign)
+			if local.Name == foreign.TagName {
+				local.R.TagNameTaggings = append(local.R.TagNameTaggings, foreign)
 				if foreign.R == nil {
 					foreign.R = &taggingR{}
 				}
-				foreign.R.Tag = local
+				foreign.R.TagNameTag = local
 				break
 			}
 		}
@@ -504,25 +497,25 @@ func (tagL) LoadTaggings(ctx context.Context, e boil.ContextExecutor, singular b
 	return nil
 }
 
-// AddTaggings adds the given related objects to the existing relationships
+// AddTagNameTaggings adds the given related objects to the existing relationships
 // of the tag, optionally inserting them as new records.
-// Appends related to o.R.Taggings.
-// Sets related.R.Tag appropriately.
-func (o *Tag) AddTaggings(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Tagging) error {
+// Appends related to o.R.TagNameTaggings.
+// Sets related.R.TagNameTag appropriately.
+func (o *Tag) AddTagNameTaggings(ctx context.Context, exec boil.ContextExecutor, insert bool, related ...*Tagging) error {
 	var err error
 	for _, rel := range related {
 		if insert {
-			rel.TagID = o.ID
+			rel.TagName = o.Name
 			if err = rel.Insert(ctx, exec, boil.Infer()); err != nil {
 				return errors.Wrap(err, "failed to insert into foreign table")
 			}
 		} else {
 			updateQuery := fmt.Sprintf(
 				"UPDATE `taggings` SET %s WHERE %s",
-				strmangle.SetParamNames("`", "`", 0, []string{"tag_id"}),
+				strmangle.SetParamNames("`", "`", 0, []string{"tag_name"}),
 				strmangle.WhereClause("`", "`", 0, taggingPrimaryKeyColumns),
 			)
-			values := []interface{}{o.ID, rel.ArticleID, rel.TagID}
+			values := []interface{}{o.Name, rel.ArticleID, rel.TagName}
 
 			if boil.IsDebug(ctx) {
 				writer := boil.DebugWriterFrom(ctx)
@@ -533,25 +526,25 @@ func (o *Tag) AddTaggings(ctx context.Context, exec boil.ContextExecutor, insert
 				return errors.Wrap(err, "failed to update foreign table")
 			}
 
-			rel.TagID = o.ID
+			rel.TagName = o.Name
 		}
 	}
 
 	if o.R == nil {
 		o.R = &tagR{
-			Taggings: related,
+			TagNameTaggings: related,
 		}
 	} else {
-		o.R.Taggings = append(o.R.Taggings, related...)
+		o.R.TagNameTaggings = append(o.R.TagNameTaggings, related...)
 	}
 
 	for _, rel := range related {
 		if rel.R == nil {
 			rel.R = &taggingR{
-				Tag: o,
+				TagNameTag: o,
 			}
 		} else {
-			rel.R.Tag = o
+			rel.R.TagNameTag = o
 		}
 	}
 	return nil
@@ -570,7 +563,7 @@ func Tags(mods ...qm.QueryMod) tagQuery {
 
 // FindTag retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindTag(ctx context.Context, exec boil.ContextExecutor, iD string, selectCols ...string) (*Tag, error) {
+func FindTag(ctx context.Context, exec boil.ContextExecutor, name string, selectCols ...string) (*Tag, error) {
 	tagObj := &Tag{}
 
 	sel := "*"
@@ -578,10 +571,10 @@ func FindTag(ctx context.Context, exec boil.ContextExecutor, iD string, selectCo
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from `tags` where `id`=?", sel,
+		"select %s from `tags` where `name`=?", sel,
 	)
 
-	q := queries.Raw(query, iD)
+	q := queries.Raw(query, name)
 
 	err := q.Bind(ctx, exec, tagObj)
 	if err != nil {
@@ -677,7 +670,7 @@ func (o *Tag) Insert(ctx context.Context, exec boil.ContextExecutor, columns boi
 	}
 
 	identifierCols = []interface{}{
-		o.ID,
+		o.Name,
 	}
 
 	if boil.IsDebug(ctx) {
@@ -829,7 +822,6 @@ func (o TagSlice) UpdateAll(ctx context.Context, exec boil.ContextExecutor, cols
 }
 
 var mySQLTagUniqueColumns = []string{
-	"id",
 	"name",
 }
 
@@ -986,7 +978,7 @@ func (o *Tag) Delete(ctx context.Context, exec boil.ContextExecutor) (int64, err
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), tagPrimaryKeyMapping)
-	sql := "DELETE FROM `tags` WHERE `id`=?"
+	sql := "DELETE FROM `tags` WHERE `name`=?"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1083,7 +1075,7 @@ func (o TagSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) (int
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Tag) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindTag(ctx, exec, o.ID)
+	ret, err := FindTag(ctx, exec, o.Name)
 	if err != nil {
 		return err
 	}
@@ -1122,16 +1114,16 @@ func (o *TagSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor) err
 }
 
 // TagExists checks if the Tag row exists.
-func TagExists(ctx context.Context, exec boil.ContextExecutor, iD string) (bool, error) {
+func TagExists(ctx context.Context, exec boil.ContextExecutor, name string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from `tags` where `id`=? limit 1)"
+	sql := "select exists(select 1 from `tags` where `name`=? limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, iD)
+		fmt.Fprintln(writer, name)
 	}
-	row := exec.QueryRowContext(ctx, sql, iD)
+	row := exec.QueryRowContext(ctx, sql, name)
 
 	err := row.Scan(&exists)
 	if err != nil {
@@ -1143,5 +1135,5 @@ func TagExists(ctx context.Context, exec boil.ContextExecutor, iD string) (bool,
 
 // Exists checks if the Tag row exists.
 func (o *Tag) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
-	return TagExists(ctx, exec, o.ID)
+	return TagExists(ctx, exec, o.Name)
 }

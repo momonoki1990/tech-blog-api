@@ -7,7 +7,6 @@ import (
 )
 
 type Tag struct {
-	Id uuid.UUID
 	Name string
 }
 
@@ -45,7 +44,6 @@ func NewArticle (title string, content string, categoryId uuid.UUID, tagNames []
 	var tags []Tag
 	for i := 0; i < len(tagNames); i++ {
 		tag := Tag{
-			Id: uuid.New(),
 			Name: tagNames[i],
 		}
 		tags = append(tags, tag)

@@ -13,6 +13,8 @@ $ docker-compose up
 $ sql-migrate new -env="local" -config=sqlmigrate.yml create_articles_table
 $ sql-migrate up -env="local" -config=sqlmigrate.yml
 $ sql-migrate down -env="local" -config=sqlmigrate.yml
+# migrate down for all migration files
+$ sql-migrate down -env="local" -config=sqlmigrate.yml -limit=0
 ```
 
 ## sql-boiler

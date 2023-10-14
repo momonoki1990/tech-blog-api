@@ -24,7 +24,7 @@ import (
 // Tagging is an object representing the database table.
 type Tagging struct {
 	ArticleID string    `boil:"article_id" json:"article_id" toml:"article_id" yaml:"article_id"`
-	TagID     string    `boil:"tag_id" json:"tag_id" toml:"tag_id" yaml:"tag_id"`
+	TagName   string    `boil:"tag_name" json:"tag_name" toml:"tag_name" yaml:"tag_name"`
 	CreatedAt time.Time `boil:"created_at" json:"created_at" toml:"created_at" yaml:"created_at"`
 
 	R *taggingR `boil:"-" json:"-" toml:"-" yaml:"-"`
@@ -33,21 +33,21 @@ type Tagging struct {
 
 var TaggingColumns = struct {
 	ArticleID string
-	TagID     string
+	TagName   string
 	CreatedAt string
 }{
 	ArticleID: "article_id",
-	TagID:     "tag_id",
+	TagName:   "tag_name",
 	CreatedAt: "created_at",
 }
 
 var TaggingTableColumns = struct {
 	ArticleID string
-	TagID     string
+	TagName   string
 	CreatedAt string
 }{
 	ArticleID: "taggings.article_id",
-	TagID:     "taggings.tag_id",
+	TagName:   "taggings.tag_name",
 	CreatedAt: "taggings.created_at",
 }
 
@@ -55,27 +55,27 @@ var TaggingTableColumns = struct {
 
 var TaggingWhere = struct {
 	ArticleID whereHelperstring
-	TagID     whereHelperstring
+	TagName   whereHelperstring
 	CreatedAt whereHelpertime_Time
 }{
 	ArticleID: whereHelperstring{field: "`taggings`.`article_id`"},
-	TagID:     whereHelperstring{field: "`taggings`.`tag_id`"},
+	TagName:   whereHelperstring{field: "`taggings`.`tag_name`"},
 	CreatedAt: whereHelpertime_Time{field: "`taggings`.`created_at`"},
 }
 
 // TaggingRels is where relationship names are stored.
 var TaggingRels = struct {
-	Article string
-	Tag     string
+	Article    string
+	TagNameTag string
 }{
-	Article: "Article",
-	Tag:     "Tag",
+	Article:    "Article",
+	TagNameTag: "TagNameTag",
 }
 
 // taggingR is where relationships are stored.
 type taggingR struct {
-	Article *Article `boil:"Article" json:"Article" toml:"Article" yaml:"Article"`
-	Tag     *Tag     `boil:"Tag" json:"Tag" toml:"Tag" yaml:"Tag"`
+	Article    *Article `boil:"Article" json:"Article" toml:"Article" yaml:"Article"`
+	TagNameTag *Tag     `boil:"TagNameTag" json:"TagNameTag" toml:"TagNameTag" yaml:"TagNameTag"`
 }
 
 // NewStruct creates a new relationship struct
@@ -90,21 +90,21 @@ func (r *taggingR) GetArticle() *Article {
 	return r.Article
 }
 
-func (r *taggingR) GetTag() *Tag {
+func (r *taggingR) GetTagNameTag() *Tag {
 	if r == nil {
 		return nil
 	}
-	return r.Tag
+	return r.TagNameTag
 }
 
 // taggingL is where Load methods for each relationship are stored.
 type taggingL struct{}
 
 var (
-	taggingAllColumns            = []string{"article_id", "tag_id", "created_at"}
-	taggingColumnsWithoutDefault = []string{"article_id", "tag_id"}
+	taggingAllColumns            = []string{"article_id", "tag_name", "created_at"}
+	taggingColumnsWithoutDefault = []string{"article_id", "tag_name"}
 	taggingColumnsWithDefault    = []string{"created_at"}
-	taggingPrimaryKeyColumns     = []string{"article_id", "tag_id"}
+	taggingPrimaryKeyColumns     = []string{"article_id", "tag_name"}
 	taggingGeneratedColumns      = []string{}
 )
 
@@ -397,10 +397,10 @@ func (o *Tagging) Article(mods ...qm.QueryMod) articleQuery {
 	return Articles(queryMods...)
 }
 
-// Tag pointed to by the foreign key.
-func (o *Tagging) Tag(mods ...qm.QueryMod) tagQuery {
+// TagNameTag pointed to by the foreign key.
+func (o *Tagging) TagNameTag(mods ...qm.QueryMod) tagQuery {
 	queryMods := []qm.QueryMod{
-		qm.Where("`id` = ?", o.TagID),
+		qm.Where("`name` = ?", o.TagName),
 	}
 
 	queryMods = append(queryMods, mods...)
@@ -528,9 +528,9 @@ func (taggingL) LoadArticle(ctx context.Context, e boil.ContextExecutor, singula
 	return nil
 }
 
-// LoadTag allows an eager lookup of values, cached into the
+// LoadTagNameTag allows an eager lookup of values, cached into the
 // loaded structs of the objects. This is for an N-1 relationship.
-func (taggingL) LoadTag(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTagging interface{}, mods queries.Applicator) error {
+func (taggingL) LoadTagNameTag(ctx context.Context, e boil.ContextExecutor, singular bool, maybeTagging interface{}, mods queries.Applicator) error {
 	var slice []*Tagging
 	var object *Tagging
 
@@ -561,7 +561,7 @@ func (taggingL) LoadTag(ctx context.Context, e boil.ContextExecutor, singular bo
 		if object.R == nil {
 			object.R = &taggingR{}
 		}
-		args = append(args, object.TagID)
+		args = append(args, object.TagName)
 
 	} else {
 	Outer:
@@ -571,12 +571,12 @@ func (taggingL) LoadTag(ctx context.Context, e boil.ContextExecutor, singular bo
 			}
 
 			for _, a := range args {
-				if a == obj.TagID {
+				if a == obj.TagName {
 					continue Outer
 				}
 			}
 
-			args = append(args, obj.TagID)
+			args = append(args, obj.TagName)
 
 		}
 	}
@@ -587,7 +587,7 @@ func (taggingL) LoadTag(ctx context.Context, e boil.ContextExecutor, singular bo
 
 	query := NewQuery(
 		qm.From(`tags`),
-		qm.WhereIn(`tags.id in ?`, args...),
+		qm.WhereIn(`tags.name in ?`, args...),
 	)
 	if mods != nil {
 		mods.Apply(query)
@@ -624,22 +624,22 @@ func (taggingL) LoadTag(ctx context.Context, e boil.ContextExecutor, singular bo
 
 	if singular {
 		foreign := resultSlice[0]
-		object.R.Tag = foreign
+		object.R.TagNameTag = foreign
 		if foreign.R == nil {
 			foreign.R = &tagR{}
 		}
-		foreign.R.Taggings = append(foreign.R.Taggings, object)
+		foreign.R.TagNameTaggings = append(foreign.R.TagNameTaggings, object)
 		return nil
 	}
 
 	for _, local := range slice {
 		for _, foreign := range resultSlice {
-			if local.TagID == foreign.ID {
-				local.R.Tag = foreign
+			if local.TagName == foreign.Name {
+				local.R.TagNameTag = foreign
 				if foreign.R == nil {
 					foreign.R = &tagR{}
 				}
-				foreign.R.Taggings = append(foreign.R.Taggings, local)
+				foreign.R.TagNameTaggings = append(foreign.R.TagNameTaggings, local)
 				break
 			}
 		}
@@ -664,7 +664,7 @@ func (o *Tagging) SetArticle(ctx context.Context, exec boil.ContextExecutor, ins
 		strmangle.SetParamNames("`", "`", 0, []string{"article_id"}),
 		strmangle.WhereClause("`", "`", 0, taggingPrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.ArticleID, o.TagID}
+	values := []interface{}{related.ID, o.ArticleID, o.TagName}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -695,10 +695,10 @@ func (o *Tagging) SetArticle(ctx context.Context, exec boil.ContextExecutor, ins
 	return nil
 }
 
-// SetTag of the tagging to the related item.
-// Sets o.R.Tag to related.
-// Adds o to related.R.Taggings.
-func (o *Tagging) SetTag(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Tag) error {
+// SetTagNameTag of the tagging to the related item.
+// Sets o.R.TagNameTag to related.
+// Adds o to related.R.TagNameTaggings.
+func (o *Tagging) SetTagNameTag(ctx context.Context, exec boil.ContextExecutor, insert bool, related *Tag) error {
 	var err error
 	if insert {
 		if err = related.Insert(ctx, exec, boil.Infer()); err != nil {
@@ -708,10 +708,10 @@ func (o *Tagging) SetTag(ctx context.Context, exec boil.ContextExecutor, insert 
 
 	updateQuery := fmt.Sprintf(
 		"UPDATE `taggings` SET %s WHERE %s",
-		strmangle.SetParamNames("`", "`", 0, []string{"tag_id"}),
+		strmangle.SetParamNames("`", "`", 0, []string{"tag_name"}),
 		strmangle.WhereClause("`", "`", 0, taggingPrimaryKeyColumns),
 	)
-	values := []interface{}{related.ID, o.ArticleID, o.TagID}
+	values := []interface{}{related.Name, o.ArticleID, o.TagName}
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -722,21 +722,21 @@ func (o *Tagging) SetTag(ctx context.Context, exec boil.ContextExecutor, insert 
 		return errors.Wrap(err, "failed to update local table")
 	}
 
-	o.TagID = related.ID
+	o.TagName = related.Name
 	if o.R == nil {
 		o.R = &taggingR{
-			Tag: related,
+			TagNameTag: related,
 		}
 	} else {
-		o.R.Tag = related
+		o.R.TagNameTag = related
 	}
 
 	if related.R == nil {
 		related.R = &tagR{
-			Taggings: TaggingSlice{o},
+			TagNameTaggings: TaggingSlice{o},
 		}
 	} else {
-		related.R.Taggings = append(related.R.Taggings, o)
+		related.R.TagNameTaggings = append(related.R.TagNameTaggings, o)
 	}
 
 	return nil
@@ -755,7 +755,7 @@ func Taggings(mods ...qm.QueryMod) taggingQuery {
 
 // FindTagging retrieves a single record by ID with an executor.
 // If selectCols is empty Find will return all columns.
-func FindTagging(ctx context.Context, exec boil.ContextExecutor, articleID string, tagID string, selectCols ...string) (*Tagging, error) {
+func FindTagging(ctx context.Context, exec boil.ContextExecutor, articleID string, tagName string, selectCols ...string) (*Tagging, error) {
 	taggingObj := &Tagging{}
 
 	sel := "*"
@@ -763,10 +763,10 @@ func FindTagging(ctx context.Context, exec boil.ContextExecutor, articleID strin
 		sel = strings.Join(strmangle.IdentQuoteSlice(dialect.LQ, dialect.RQ, selectCols), ",")
 	}
 	query := fmt.Sprintf(
-		"select %s from `taggings` where `article_id`=? AND `tag_id`=?", sel,
+		"select %s from `taggings` where `article_id`=? AND `tag_name`=?", sel,
 	)
 
-	q := queries.Raw(query, articleID, tagID)
+	q := queries.Raw(query, articleID, tagName)
 
 	err := q.Bind(ctx, exec, taggingObj)
 	if err != nil {
@@ -863,7 +863,7 @@ func (o *Tagging) Insert(ctx context.Context, exec boil.ContextExecutor, columns
 
 	identifierCols = []interface{}{
 		o.ArticleID,
-		o.TagID,
+		o.TagName,
 	}
 
 	if boil.IsDebug(ctx) {
@@ -1169,7 +1169,7 @@ func (o *Tagging) Delete(ctx context.Context, exec boil.ContextExecutor) (int64,
 	}
 
 	args := queries.ValuesFromMapping(reflect.Indirect(reflect.ValueOf(o)), taggingPrimaryKeyMapping)
-	sql := "DELETE FROM `taggings` WHERE `article_id`=? AND `tag_id`=?"
+	sql := "DELETE FROM `taggings` WHERE `article_id`=? AND `tag_name`=?"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
@@ -1266,7 +1266,7 @@ func (o TaggingSlice) DeleteAll(ctx context.Context, exec boil.ContextExecutor) 
 // Reload refetches the object from the database
 // using the primary keys with an executor.
 func (o *Tagging) Reload(ctx context.Context, exec boil.ContextExecutor) error {
-	ret, err := FindTagging(ctx, exec, o.ArticleID, o.TagID)
+	ret, err := FindTagging(ctx, exec, o.ArticleID, o.TagName)
 	if err != nil {
 		return err
 	}
@@ -1305,16 +1305,16 @@ func (o *TaggingSlice) ReloadAll(ctx context.Context, exec boil.ContextExecutor)
 }
 
 // TaggingExists checks if the Tagging row exists.
-func TaggingExists(ctx context.Context, exec boil.ContextExecutor, articleID string, tagID string) (bool, error) {
+func TaggingExists(ctx context.Context, exec boil.ContextExecutor, articleID string, tagName string) (bool, error) {
 	var exists bool
-	sql := "select exists(select 1 from `taggings` where `article_id`=? AND `tag_id`=? limit 1)"
+	sql := "select exists(select 1 from `taggings` where `article_id`=? AND `tag_name`=? limit 1)"
 
 	if boil.IsDebug(ctx) {
 		writer := boil.DebugWriterFrom(ctx)
 		fmt.Fprintln(writer, sql)
-		fmt.Fprintln(writer, articleID, tagID)
+		fmt.Fprintln(writer, articleID, tagName)
 	}
-	row := exec.QueryRowContext(ctx, sql, articleID, tagID)
+	row := exec.QueryRowContext(ctx, sql, articleID, tagName)
 
 	err := row.Scan(&exists)
 	if err != nil {
@@ -1326,5 +1326,5 @@ func TaggingExists(ctx context.Context, exec boil.ContextExecutor, articleID str
 
 // Exists checks if the Tagging row exists.
 func (o *Tagging) Exists(ctx context.Context, exec boil.ContextExecutor) (bool, error) {
-	return TaggingExists(ctx, exec, o.ArticleID, o.TagID)
+	return TaggingExists(ctx, exec, o.ArticleID, o.TagName)
 }
