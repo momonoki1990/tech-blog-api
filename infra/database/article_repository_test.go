@@ -3,7 +3,6 @@ package database
 import (
 	"context"
 	"database/sql"
-	"os"
 	"testing"
 	"time"
 
@@ -15,25 +14,7 @@ import (
 	"github.com/volatiletech/sqlboiler/v4/boil"
 )
 
-func GetTestConnection() (*sql.DB) {
-    dataSource := os.ExpandEnv("${DB_USER}:${DB_PASSWORD}@tcp(${DB_HOST}:${DB_PORT})/${DB_DATABASE}?parseTime=true")
-    db, err := sql.Open("mysql", dataSource)
-    if err!= nil {
-        panic(err.Error())
-    }
-    if err = db.Ping(); err != nil {
-		panic(err)
-	}
-    return db
-
-}
-
-func GetTestTransaction(db *sql.DB, ctx context.Context) *sql.Tx {
-    tx, _ := db.BeginTx(ctx, nil)
-    return tx
-}
-
-func TestFindOneById(t *testing.T) {
+func TestArticleFindOneById(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -236,7 +217,7 @@ func TestFindOneById(t *testing.T) {
 	}
 }
 
-func TestFindOneByIdNotExisting(t *testing.T) {
+func TestArticleFindOneByIdNotExisting(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -256,7 +237,7 @@ func TestFindOneByIdNotExisting(t *testing.T) {
 	}
 }
 
-func TestFind(t *testing.T) {
+func TestArticleFind(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -470,7 +451,7 @@ func TestFind(t *testing.T) {
 	}
 }
 
-func TestInsert(t *testing.T) {
+func TestArticleInsert(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -602,7 +583,7 @@ func TestInsert(t *testing.T) {
 	}
 }
 
-func TestInsertAlreadyExisting(t *testing.T) {
+func TestArticleInsertAlreadyExisting(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -642,7 +623,7 @@ func TestInsertAlreadyExisting(t *testing.T) {
 	}
 }
 
-func TestUpdate(t *testing.T) {
+func TestArticleUpdate(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -701,8 +682,8 @@ func TestUpdate(t *testing.T) {
 	article1.Title = "Title1Changed"
 	article1.Content = "Content1Changed"
 	article1.CategoryId = categoryId2
-	article1.ChangeTags([]string{"Tag2", "Tag3"})
-	err = article1.ChangeStatus(model.Published)
+	article1.SetTags([]string{"Tag2", "Tag3"})
+	err = article1.SetStatus(model.Published)
 	if err != nil {
 		panic(err)
 	}
@@ -769,7 +750,7 @@ func TestUpdate(t *testing.T) {
 	}
 
 	// Execute2
-	err = article1.ChangeStatus(model.Draft)
+	err = article1.SetStatus(model.Draft)
 	if err != nil {
 		panic(err)
 	}
@@ -788,7 +769,7 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
-func TestUpdateNotExisting(t *testing.T) {
+func TestArticleUpdateNotExisting(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -808,6 +789,8 @@ func TestUpdateNotExisting(t *testing.T) {
 	// Execute
 	r := NewArticleRepository(ctx, tx)
 	err = r.Update(article1)
+
+	// Check
 	if err == nil {
 		t.Errorf("err of r.Update(article1): Expected %v, but got %v", "not nil", err)
 	}
@@ -816,7 +799,7 @@ func TestUpdateNotExisting(t *testing.T) {
 	}
 }
 
-func TestDelete(t *testing.T) {
+func TestArticleDelete(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -910,7 +893,7 @@ func TestDelete(t *testing.T) {
 	}
 }
 
-func TestDeleteNotExisting(t *testing.T) {
+func TestArticleDeleteNotExisting(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -938,7 +921,7 @@ func TestDeleteNotExisting(t *testing.T) {
 	}
 }
 
-func TestHandleNoTagArticle(t *testing.T) {
+func TestArticleHandleNoTagArticle(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
 	tx := GetTestTransaction(db, ctx)
@@ -982,7 +965,7 @@ func TestHandleNoTagArticle(t *testing.T) {
 	}
 
 	// Execute2
-	article1.ChangeTags([]string{"Tag1"})
+	article1.SetTags([]string{"Tag1"})
 	err = r.Update(article1)
 	if err != nil {
 		panic(err)
@@ -998,7 +981,7 @@ func TestHandleNoTagArticle(t *testing.T) {
 	}
 
 	// Execute3
-	article1.ChangeTags([]string{})
+	article1.SetTags([]string{})
 	err = r.Update(article1)
 	if err != nil {
 		panic(err)

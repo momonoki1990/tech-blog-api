@@ -39,6 +39,9 @@ func (r *CategoryRepository)FindOneByName(name string) (*model.Category, error) 
 
 func (r *CategoryRepository)FindOneById(id uuid.UUID) (*model.Category, error) {
 	dbCategory, err := dbModel.Categories(dbModel.CategoryWhere.ID.EQ(id.String())).One(r.ctx, r.exec)
+	if err == sql.ErrNoRows {
+		return nil, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -51,6 +54,9 @@ func (r *CategoryRepository)FindOneById(id uuid.UUID) (*model.Category, error) {
 
 func (r *CategoryRepository) Find() ([]*model.Category, error) {
 	dbCategories, err := dbModel.Categories().All(r.ctx, r.exec)
+	if err == sql.ErrNoRows {
+		return []*model.Category{}, nil
+	}
 	if err != nil {
 		return nil, err
 	}
@@ -69,11 +75,11 @@ func (r *CategoryRepository) Insert(c *model.Category) (error) {
 
 func (r *CategoryRepository) Update(c *model.Category) (error) {
 	dbCategory, err := dbModel.FindCategory(r.ctx, r.exec, c.Id.String())
+	if err == sql.ErrNoRows {
+		return errors.New("Category to update was not found")
+	}
 	if err != nil {
 		return err
-	}
-	if dbCategory == nil {
-		return errors.New("変更対象のカテゴリが見つかりませんでした")
 	}
 	dbCategory.Name = c.Name
 	dbCategory.DisplayOrder = null.IntFrom(c.DisplayOrder)
@@ -83,11 +89,11 @@ func (r *CategoryRepository) Update(c *model.Category) (error) {
 
 func (r *CategoryRepository) Delete(id uuid.UUID) (error) {
 	dbCategory, err := dbModel.FindCategory(r.ctx, r.exec, id.String())
+	if err == sql.ErrNoRows {
+		return errors.New("Category to delete was not found")
+	}
 	if err != nil {
 		return err
-	}
-	if dbCategory == nil {
-		return errors.New("対象のカテゴリが見つかりません")
 	}
 	dbCategory.Delete(r.ctx, r.exec)
 	return nil

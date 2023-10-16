@@ -65,7 +65,7 @@ func NewArticle (title string, content string, categoryId uuid.UUID, tagNames []
 	return article, nil
 }
 
-func (a *Article) ChangeTags (tagNames []string) {
+func (a *Article) SetTags (tagNames []string) {
 	tags := generateTags(tagNames)
 	a.Tags = tags
 }
@@ -81,7 +81,7 @@ func generateTags(tagNames []string) []Tag {
 	return tags
 }
 
-func (a *Article) ChangeStatus (s Status) error {
+func (a *Article) SetStatus (s Status) error {
 	if s == Draft {
 		a.Status = Draft
 		a.PublishedAt = nil
