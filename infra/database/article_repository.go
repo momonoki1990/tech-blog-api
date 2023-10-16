@@ -26,10 +26,12 @@ func NewArticleRepository(ctx context.Context,  exec boil.ContextExecutor) repos
 }
 
 func (r *ArticleRepository)FindOneById(id uuid.UUID) (*model.Article, error) {
-	
 	dbArticle, err := dbModel.Articles(dbModel.ArticleWhere.ID.EQ(id.String())).One(r.ctx, r.exec)
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return nil, err
+	}
+	if dbArticle == nil {
+		return nil, nil
 	}
 	
 	article, err := toArticle(dbArticle, r)
@@ -78,11 +80,11 @@ func (r *ArticleRepository) Insert(c *model.Article) (error) {
 
 func (r *ArticleRepository) Update(a *model.Article) (error) {
 	dbArticle, err := dbModel.FindArticle(r.ctx, r.exec, a.Id.String())
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
 	if dbArticle == nil {
-		return errors.New("変更対象の記事が見つかりませんでした")
+		return errors.New("Article to update was not found")
 	}
 
 	var publishedAt null.Time
@@ -98,11 +100,13 @@ func (r *ArticleRepository) Update(a *model.Article) (error) {
 	dbArticle.PublishedAt = publishedAt
 	dbArticle.CreatedAt = a.CreatedAt
 	dbArticle.UpdatedAt = a.UpdatedAt
+
 	rowsAff, err := dbArticle.Update(r.ctx, r.exec, boil.Infer())
 	if err != nil {
 		return err
 	}
-	if rowsAff != 1 {
+	// NOTE: タグだけ変更があった場合はdbArticle.UpdateのrowsAffは0になる
+	if rowsAff != 0 && rowsAff != 1  {
 		return errors.New(fmt.Sprintf("Number of rows affected by update is invalid %v", rowsAff))
 	}
 
@@ -193,12 +197,12 @@ func (r *ArticleRepository) Update(a *model.Article) (error) {
 			if err != nil {
 				return err
 			}
-			rowsAff, err = foundTag.Delete(r.ctx, r.exec)
+			rowsAff, err := foundTag.Delete(r.ctx, r.exec)
 			if err != nil {
 				return err
 			}
 			if rowsAff != 1 {
-				return errors.New(fmt.Sprintf("Number of rows affected by update is invalid %v", rowsAff))
+				return errors.New(fmt.Sprintf("Number of rows affected by delete is invalid %v", rowsAff))
 			}
 		}
 	}
@@ -209,11 +213,11 @@ func (r *ArticleRepository) Update(a *model.Article) (error) {
 // taggingも削除、tagもチェック
 func (r *ArticleRepository) Delete(id uuid.UUID) (error) {
 	dbArticle, err := dbModel.FindArticle(r.ctx, r.exec, id.String())
-	if err != nil {
+	if err != nil && err != sql.ErrNoRows {
 		return err
 	}
 	if dbArticle == nil {
-		return errors.New("対象の記事が見つかりません")
+		return errors.New("Article to delete was not found")
 	}
 
 	// タグの処理

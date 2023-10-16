@@ -228,7 +228,27 @@ func TestFindOneById(t *testing.T) {
 	if !actual2.UpdatedAt.Equal(expected2.UpdatedAt) {
 		t.Errorf("actual2.UpdatedAt: Expected %s, but got %s", actual2.UpdatedAt, expected2.UpdatedAt)
 	}
-} 
+}
+
+func TestFindOneByIdNotExisting(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	articleId, err := uuid.Parse("11111111-1111-1111-1111-111111111111")
+	if err != nil {
+		panic(err)
+	}
+	r := NewArticleRepository(ctx, tx)
+	article, err := r.FindOneById(articleId)
+	if err != nil {
+		t.Errorf("err of r.FindOneById(articleId): Expected %v, but got %v", nil, err)
+	}
+	if article != nil {
+		t.Errorf("article: Expected %v, but got %v", nil, article)
+	}
+}
 
 func TestFind(t *testing.T) {
 	db := GetTestConnection()
@@ -561,6 +581,46 @@ func TestInsert(t *testing.T) {
 	}
 }
 
+func TestInsertAlreadyExisting(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	dbCategory1 := &dbModel.Category{
+		ID: "21111111-1111-1111-1111-111111111111",
+		Name: "Category1",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err := dbCategory1.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
+
+	categoryId1, err := uuid.Parse("21111111-1111-1111-1111-111111111111")
+	if err != nil {
+		panic(err)
+	}
+
+	article1, err := model.NewArticle("Title1", "Content1", categoryId1, []string{"Tag1"}, false)
+	if err != nil {
+		panic(err)
+	}
+	
+	r := NewArticleRepository(ctx, tx)
+	err = r.Insert(article1)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	err = r.Insert(article1)
+	if err == nil {
+		t.Errorf("err of r.Insert(article1): Expected %v, but got %v", "not nil", err)
+	}
+}
+
 func TestUpdate(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
@@ -707,6 +767,34 @@ func TestUpdate(t *testing.T) {
 	}
 }
 
+func TestUpdateNotExisting(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	categoryId1, err := uuid.Parse("21111111-1111-1111-1111-111111111111")
+	if err != nil {
+		panic(err)
+	}
+	
+	article1, err := model.NewArticle("Title1", "Content1", categoryId1, []string{"Tag1"}, false)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	r := NewArticleRepository(ctx, tx)
+	err = r.Update(article1)
+	if err == nil {
+		t.Errorf("err of r.Update(article1): Expected %v, but got %v", "not nil", err)
+	}
+	if err.Error() != "Article to update was not found" {
+		t.Errorf("err of r.Update(article1): Expected %v, but got %v", "Article to update was not found", err)
+	}
+}
+
 func TestDelete(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
@@ -798,5 +886,124 @@ func TestDelete(t *testing.T) {
 	}
 	if len(dbTaggings) != 0 {
 		t.Errorf("len(dbTaggings): Expected %v, but got %v", 0, len(dbTaggings))
+	}
+}
+
+func TestDeleteNotExisting(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	categoryId1, err := uuid.Parse("21111111-1111-1111-1111-111111111111")
+	if err != nil {
+		panic(err)
+	}
+	
+	article1, err := model.NewArticle("Title1", "Content1", categoryId1, []string{"Tag1"}, false)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	r := NewArticleRepository(ctx, tx)
+	err = r.Delete(article1.Id)
+	if err == nil {
+		t.Errorf("err of r.Delete(article1): Expected %v, but got %v", "not nil", err)
+	}
+	if err.Error() != "Article to delete was not found" {
+		t.Errorf("err of r.Delete(article1): Expected %v, but got %v", "Article to delete was not found", err)
+	}
+}
+
+func TestHandleNoTagArticle(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	dbCategory1 := &dbModel.Category{
+		ID: "21111111-1111-1111-1111-111111111111",
+		Name: "Category1",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err := dbCategory1.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
+
+	categoryId1, err := uuid.Parse("21111111-1111-1111-1111-111111111111")
+	if err != nil {
+		panic(err)
+	}
+
+	article1, err := model.NewArticle("Title1", "Content1", categoryId1, []string{}, false)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	r := NewArticleRepository(ctx, tx)
+	err = r.Insert(article1)
+	if err != nil {
+		panic(err)
+	}
+
+	// Check
+	article1Check, err := r.FindOneById(article1.Id)
+	if err != nil {
+		panic(err)
+	}
+	if len(article1Check.Tags) != 0 {
+		t.Errorf("len(article1Check.Tags): Expected %d, bot got %d", 0, len(article1Check.Tags))
+	}
+
+	// Execute2
+	article1.ChangeTags([]string{"Tag1"})
+	err = r.Update(article1)
+	if err != nil {
+		panic(err)
+	}
+
+	// Check2
+	article1Check2, err := r.FindOneById(article1.Id)
+	if err != nil {
+		panic(err)
+	}
+	if len(article1Check2.Tags) != 1 {
+		t.Errorf("len(article1Check2.Tags): Expected %d, bot got %d", 1, len(article1Check2.Tags))
+	}
+
+	// Execute3
+	article1.ChangeTags([]string{})
+	err = r.Update(article1)
+	if err != nil {
+		panic(err)
+	}
+
+	// Check3
+	article1Check3, err := r.FindOneById(article1.Id)
+	if err != nil {
+		panic(err)
+	}
+	if len(article1Check3.Tags) != 0 {
+		t.Errorf("len(article1Check3.Tags): Expected %d, bot got %d", 0, len(article1Check3.Tags))
+	}
+
+	// Execute4
+	err = r.Delete(article1.Id)
+	if err != nil {
+		panic(err)
+	}
+
+	// Check4
+	article1Check4, err := r.FindOneById(article1.Id)
+	if err != nil {
+		panic(err)
+	}
+	if article1Check4 != nil {
+		t.Errorf("article1Check4: Expected %v, bot got %v", nil, article1Check4)
 	}
 }
