@@ -312,7 +312,7 @@ func toArticle(d *dbModel.Article, r *ArticleRepository) (*model.Article, error)
 	if err != nil {
 		return nil, err
 	}
-	categoryId, err := uuid.Parse(d.ID)
+	categoryId, err := uuid.Parse(d.CategoryID)
 	if err != nil {
 		return nil, err
 	}

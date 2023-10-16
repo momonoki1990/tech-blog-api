@@ -185,6 +185,9 @@ func TestFindOneById(t *testing.T) {
 	if actual1.Content != expected1.Content {
 		t.Errorf("actual1.Content: Expected %s, but got %s", expected1.Content, actual1.Content)
 	}
+	if actual1.CategoryId.String() != expected1.CategoryId.String() {
+		t.Errorf("actual1.CategoryId: Expected %s, but got %s", expected1.CategoryId.String(), actual1.CategoryId.String())
+	}
 	if actual1.Tags[0].Name != expected1.Tags[0].Name {
 		t.Errorf("actual1.Tags[0].Name: Expected %s, but got %s", expected1.Tags[0].Name, actual1.Tags[0].Name)
 	}
@@ -212,6 +215,9 @@ func TestFindOneById(t *testing.T) {
 	}
 	if actual2.Content != expected2.Content {
 		t.Errorf("actual2.Content: Expected %s, but got %s", expected2.Content, actual2.Content)
+	}
+	if actual2.CategoryId.String() != expected1.CategoryId.String() {
+		t.Errorf("actual2.CategoryId: Expected %s, but got %s", expected1.CategoryId.String(), actual2.CategoryId.String())
 	}
 	if actual2.Tags[0].Name != expected2.Tags[0].Name {
 		t.Errorf("actual2.Tags[0].Name: Expected %s, but got %s", expected2.Tags[0].Name, actual2.Tags[0].Name)
@@ -269,6 +275,15 @@ func TestFind(t *testing.T) {
 	if err != nil {
 		panic(err)
 	}
+	dbCategory2 := &dbModel.Category{
+		ID: "21111111-1111-1111-1111-111111111112",
+		Name: "Category2",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err = dbCategory2.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
 
 	dbArticle1 := &dbModel.Article{
 		ID: "11111111-1111-1111-1111-111111111111",
@@ -306,7 +321,7 @@ func TestFind(t *testing.T) {
 		ID: "11111111-1111-1111-1111-111111111112",
 		Title: "Title2",
 		Content: "Content2",
-		CategoryID: "21111111-1111-1111-1111-111111111111",
+		CategoryID: "21111111-1111-1111-1111-111111111112",
 		PublishedAt: null.TimeFromPtr(nil),
 		Status: "Draft",
 		CreatedAt: now,
@@ -404,6 +419,9 @@ func TestFind(t *testing.T) {
 	if actual1.Content != expected1.Content {
 		t.Errorf("actual1.Content: Expected %s, but got %s", expected1.Content, actual1.Content)
 	}
+	if actual1.CategoryId.String() != expected1.CategoryId.String() {
+		t.Errorf("actual1.CategoryId: Expected %s, but got %s", expected1.CategoryId.String(), actual1.CategoryId.String())
+	}
 	if actual1.Tags[0].Name != expected1.Tags[0].Name {
 		t.Errorf("actual1.Tags[0].Name: Expected %s, but got %s", expected1.Tags[0].Name, actual1.Tags[0].Name)
 	}
@@ -431,6 +449,9 @@ func TestFind(t *testing.T) {
 	}
 	if actual2.Content != expected2.Content {
 		t.Errorf("actual1.Content: Expected %s, but got %s", expected2.Content, actual2.Content)
+	}
+	if actual2.CategoryId.String() != expected2.CategoryId.String() {
+		t.Errorf("actual2.CategoryId: Expected %s, but got %s", expected2.CategoryId.String(), actual2.CategoryId.String())
 	}
 	if actual2.Tags[0].Name != expected2.Tags[0].Name {
 		t.Errorf("actual1.Tags[0].Name: Expected %s, but got %s", expected2.Tags[0].Name, actual2.Tags[0].Name)
