@@ -15,12 +15,12 @@ type Category struct {
 
 func NewCategory(name string, displayOrder int) (*Category, error) {
 	const (
-		displayOrderMin = 0
+		displayOrderMin = 1
 		displayOrderMax = 999
 	)
 
 	if (displayOrder < displayOrderMin || displayOrder > displayOrderMax) {
-		return nil, errors.New(fmt.Sprintf("表示順序は%dから%dの間で設定してください", displayOrderMin, displayOrderMax))
+		return nil, errors.New(fmt.Sprintf("displayOrder should be from %d to %d", displayOrderMin, displayOrderMax))
 	}
 
 	c := &Category{

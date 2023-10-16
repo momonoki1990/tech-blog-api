@@ -65,6 +65,10 @@ func NewArticle (title string, content string, categoryId uuid.UUID, tagNames []
 	return article, nil
 }
 
+func (a *Article) Equals(compared *Article) bool {
+	return a.Id == compared.Id
+}
+
 func (a *Article) SetTags (tagNames []string) {
 	tags := generateTags(tagNames)
 	a.Tags = tags
