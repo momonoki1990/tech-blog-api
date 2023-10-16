@@ -530,7 +530,7 @@ func TestInsert(t *testing.T) {
 		t.Errorf("Tag2: Expected not nil, but got %v", &dbTag2)
 	}
 	if &dbTag3 == nil {
-		t.Errorf("Tag2: Expected not nil, but got %v", &dbTag2)
+		t.Errorf("Tag3: Expected not nil, but got %v", &dbTag2)
 	}
 	
 	dbTaggings1, err := dbModel.Taggings(dbModel.TaggingWhere.ArticleID.EQ(article1.Id.String())).All(ctx, tx)
@@ -559,5 +559,244 @@ func TestInsert(t *testing.T) {
 	if dbTaggings2[1].TagName != "Tag3" {
 		t.Errorf("dbTaggings2[1].TagName: Expected %s, but got %s", "Tag3", dbTaggings2[1].TagName)
 	}
+}
 
+func TestUpdate(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	dbCategory1 := &dbModel.Category{
+		ID: "21111111-1111-1111-1111-111111111111",
+		Name: "Category1",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err := dbCategory1.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
+
+	dbCategory2 := &dbModel.Category{
+		ID: "21111111-1111-1111-1111-111111111112",
+		Name: "Category2",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err = dbCategory2.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
+
+	categoryId1, err := uuid.Parse("21111111-1111-1111-1111-111111111111")
+	if err != nil {
+		panic(err)
+	}
+	categoryId2, err := uuid.Parse("21111111-1111-1111-1111-111111111112")
+	if err != nil {
+		panic(err)
+	}
+
+	article1, err := model.NewArticle("Title1", "Content1", categoryId1, []string{"Tag1"}, false)
+	if err != nil {
+		panic(err)
+	}
+	article2, err := model.NewArticle("Title2", "Content2", categoryId2, []string{"Tag2"}, false)
+	if err != nil {
+		panic(err)
+	}
+
+	r := NewArticleRepository(ctx, tx)
+	err = r.Insert(article1)
+	if err != nil {
+		panic(err)
+	}
+	err = r.Insert(article2)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	article1.Title = "Title1Changed"
+	article1.Content = "Content1Changed"
+	article1.CategoryId = categoryId2
+	article1.ChangeTags([]string{"Tag2", "Tag3"})
+	err = article1.ChangeStatus(model.Published)
+	if err != nil {
+		panic(err)
+	}
+	err = r.Update(article1)
+	if err != nil {
+		panic(err)
+	}
+
+	// Check
+	dbArticle1Check, err := dbModel.FindArticle(ctx, tx, article1.Id.String())
+	if err != nil {
+		panic(err)
+	}
+	if dbArticle1Check.Title != "Title1Changed" {
+		t.Errorf("dbArticle1Check.Title: Expected %s, but got %s", "Title1Changed", dbArticle1Check.Title)
+	}
+	if dbArticle1Check.Content != "Content1Changed" {
+		t.Errorf("dbArticle1Check.Content: Expected %s, but got %s", "Content1Changed", dbArticle1Check.Content)
+	}
+	if dbArticle1Check.CategoryID != "21111111-1111-1111-1111-111111111112" {
+		t.Errorf("dbArticle1Check.CategoryId: Expected %s, but got %s", "11111111-1111-1111-1111-111111111112", dbArticle1Check.CategoryID)
+	}
+	if dbArticle1Check.Status != "Published" {
+		t.Errorf("dbArticle1Check.Status: Expected %s, but got %s", "Published", dbArticle1Check.Status)
+	}
+	if !dbArticle1Check.PublishedAt.Valid {
+		t.Errorf("dbArticle1Check.PublishedAt: Expected %v, but got %v", "Valid is true", dbArticle1Check.PublishedAt)
+	}
+
+	dbTag1Check, err := dbModel.Tags(dbModel.TagWhere.Name.EQ("Tag1")).One(ctx, tx)
+	if err != nil && err != sql.ErrNoRows {
+		panic(err)
+	}
+	dbTag2Check, err := dbModel.Tags(dbModel.TagWhere.Name.EQ("Tag2")).One(ctx, tx)
+	if err != nil && err != sql.ErrNoRows {
+		panic(err)
+	}
+	dbTag3Check, err := dbModel.Tags(dbModel.TagWhere.Name.EQ("Tag3")).One(ctx, tx)
+	if err != nil && err != sql.ErrNoRows {
+		panic(err)
+	}
+	if dbTag1Check != nil {
+		t.Errorf("Tag1: Expected %v, but got %v", nil, &dbTag1Check)
+	}
+	if dbTag2Check == nil {
+		t.Errorf("Tag2: Expected not nil, but got %v", &dbTag2Check)
+	}
+	if dbTag3Check == nil {
+		t.Errorf("Tag3: Expected not nil, but got %v", &dbTag3Check)
+	}
+	
+	dbTaggings1, err := dbModel.Taggings(dbModel.TaggingWhere.ArticleID.EQ(article1.Id.String())).All(ctx, tx)
+	if err != nil {
+		panic(err)
+	}
+	if len(dbTaggings1) != 2 {
+		t.Errorf("len(dbTaggings2): Expected count %d, but got %d", 2, len(dbTaggings1))
+	}
+	if dbTaggings1[0].TagName != "Tag2" {
+		t.Errorf("dbTaggings1[0].TagName: Expected %s, but got %s", "Tag2", dbTaggings1[0].TagName)
+	}
+	if dbTaggings1[1].TagName != "Tag3" {
+		t.Errorf("dbTaggings1[1].TagName: Expected %s, but got %s", "Tag3", dbTaggings1[1].TagName)
+	}
+
+	// Execute2
+	err = article1.ChangeStatus(model.Draft)
+	if err != nil {
+		panic(err)
+	}
+	err = r.Update(article1)
+	if err != nil {
+		panic(err)
+	}
+	
+	// Check2
+	dbArticle1Check2, err := dbModel.FindArticle(ctx, tx, article1.Id.String())
+	if dbArticle1Check2.Status != "Draft" {
+		t.Errorf("dbArticle1Check2.Status: Expected %s, but got %s", "Draft", dbArticle1Check2.Status)
+	}
+	if dbArticle1Check2.PublishedAt.Valid {
+		t.Errorf("dbArticle1Check2.PublishedAt: Expected %v, but got %v", "Valid is false", dbArticle1Check2.PublishedAt)
+	}
+}
+
+func TestDelete(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	dbCategory1 := &dbModel.Category{
+		ID: "21111111-1111-1111-1111-111111111111",
+		Name: "Category1",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err := dbCategory1.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
+
+	dbCategory2 := &dbModel.Category{
+		ID: "21111111-1111-1111-1111-111111111112",
+		Name: "Category2",
+		DisplayOrder: null.IntFrom(99),
+	}
+	err = dbCategory2.Insert(ctx, tx, boil.Infer())
+	if err != nil {
+		panic(err)
+	}
+
+	categoryId1, err := uuid.Parse("21111111-1111-1111-1111-111111111111")
+	if err != nil {
+		panic(err)
+	}
+	categoryId2, err := uuid.Parse("21111111-1111-1111-1111-111111111112")
+	if err != nil {
+		panic(err)
+	}
+
+	article1, err := model.NewArticle("Title1", "Content1", categoryId1, []string{"Tag1", "Tag2"}, false)
+	if err != nil {
+		panic(err)
+	}
+	article2, err := model.NewArticle("Title2", "Content2", categoryId2, []string{"Tag2"}, false)
+	if err != nil {
+		panic(err)
+	}
+
+	r := NewArticleRepository(ctx, tx)
+	err = r.Insert(article1)
+	if err != nil {
+		panic(err)
+	}
+	err = r.Insert(article2)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	err = r.Delete(article1.Id)
+	if err != nil {
+		panic(err)
+	}
+
+	// Check
+	dbArticle1, err := dbModel.FindArticle(ctx, tx, article1.Id.String())
+	if err != nil && err != sql.ErrNoRows {
+		panic(err)
+	}
+	if dbArticle1 != nil {
+		t.Errorf("dbArticle1: Expected %v, but got %v", nil, dbArticle1)
+	}
+
+	dbTag1, err := dbModel.FindTag(ctx, tx, "Tag1")
+	if err != nil && err != sql.ErrNoRows {
+		panic(err)
+	}
+	if dbTag1 != nil {
+		t.Errorf("dbTag1: Expected %v, but got %v", nil, dbTag1)
+	}
+	dbTag2, err := dbModel.FindTag(ctx, tx, "Tag2")
+	if err != nil && err != sql.ErrNoRows {
+		panic(err)
+	}
+	if dbTag2 == nil {
+		t.Errorf("dbTag2: Expected %v, but got %v", "not nil", dbTag2)
+	}
+
+	dbTaggings, err := dbModel.Taggings(dbModel.TaggingWhere.ArticleID.EQ(article1.Id.String())).All(ctx, tx)
+	if err != nil && err != sql.ErrNoRows {
+		panic(err)
+	}
+	if len(dbTaggings) != 0 {
+		t.Errorf("len(dbTaggings): Expected %v, but got %v", 0, len(dbTaggings))
+	}
 }

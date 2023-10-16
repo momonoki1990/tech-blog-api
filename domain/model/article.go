@@ -1,6 +1,7 @@
 package model
 
 import (
+	"errors"
 	"time"
 
 	"github.com/google/uuid"
@@ -41,13 +42,7 @@ type Article struct {
 }
 
 func NewArticle (title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (*Article, error) {
-	var tags []Tag
-	for i := 0; i < len(tagNames); i++ {
-		tag := Tag{
-			Name: tagNames[i],
-		}
-		tags = append(tags, tag)
-	}
+	tags := generateTags(tagNames)
 	var publishedAt *time.Time
 	status := Draft
 	if (shouldPublish == true) {
@@ -68,4 +63,34 @@ func NewArticle (title string, content string, categoryId uuid.UUID, tagNames []
 		UpdatedAt: time.Now(),
 	}
 	return article, nil
+}
+
+func (a *Article) ChangeTags (tagNames []string) {
+	tags := generateTags(tagNames)
+	a.Tags = tags
+}
+
+func generateTags(tagNames []string) []Tag {
+	var tags []Tag
+	for i := 0; i < len(tagNames); i++ {
+		tag := Tag{
+			Name: tagNames[i],
+		}
+		tags = append(tags, tag)
+	}
+	return tags
+}
+
+func (a *Article) ChangeStatus (s Status) error {
+	if s == Draft {
+		a.Status = Draft
+		a.PublishedAt = nil
+	} else if s == Published {
+		a.Status = Published
+		now := time.Now()
+		a.PublishedAt = &now
+	} else {
+		return errors.New("Invalid status")
+	}
+	return nil
 }

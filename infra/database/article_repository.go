@@ -2,7 +2,9 @@ package database
 
 import (
 	"context"
+	"database/sql"
 	"errors"
+	"fmt"
 	"time"
 
 	"github.com/google/uuid"
@@ -82,14 +84,27 @@ func (r *ArticleRepository) Update(a *model.Article) (error) {
 	if dbArticle == nil {
 		return errors.New("変更対象の記事が見つかりませんでした")
 	}
+
+	var publishedAt null.Time
+	if a.PublishedAt == nil {
+		publishedAt = null.TimeFromPtr(nil)
+	} else {
+		publishedAt = null.TimeFromPtr(a.PublishedAt)
+	}
 	dbArticle.Title = a.Title
 	dbArticle.Content = a.Content
 	dbArticle.CategoryID = a.CategoryId.String()
 	dbArticle.Status = a.Status.String()
-	dbArticle.PublishedAt = null.TimeFrom(*a.PublishedAt)
+	dbArticle.PublishedAt = publishedAt
 	dbArticle.CreatedAt = a.CreatedAt
 	dbArticle.UpdatedAt = a.UpdatedAt
-	dbArticle.Update(r.ctx, r.exec, boil.Infer())
+	rowsAff, err := dbArticle.Update(r.ctx, r.exec, boil.Infer())
+	if err != nil {
+		return err
+	}
+	if rowsAff != 1 {
+		return errors.New(fmt.Sprintf("Number of rows affected by update is invalid %v", rowsAff))
+	}
 
 	// タグの処理
 	foundDbTaggings, err := dbModel.Taggings(dbModel.TaggingWhere.ArticleID.EQ(a.Id.String())).All(r.ctx, r.exec)
@@ -137,28 +152,17 @@ func (r *ArticleRepository) Update(a *model.Article) (error) {
 
 	for _, v := range addedtagNames {
 		foundTag, err := dbModel.Tags(dbModel.TagWhere.Name.EQ(v)).One(r.ctx, r.exec)
-		if err != nil {
+		if err != nil && err != sql.ErrNoRows {
 			return err
 		}
 		if foundTag == nil {
 			tag := &dbModel.Tag{
 				Name: v,
 			}
-			tag.Insert(r.ctx, r.exec, boil.Infer())
-		}
-	}
-
-	for _, v := range removedtagNames {
-		foundTagging, err := dbModel.Taggings(dbModel.TaggingWhere.TagName.EQ(v), dbModel.TaggingWhere.ArticleID.NEQ(a.Id.String())).One(r.ctx, r.exec)
-		if err != nil {
-			return err
-		}
-		if foundTagging == nil {
-			foundTag, err := dbModel.Tags(dbModel.TagWhere.Name.EQ(v)).One(r.ctx, r.exec)
+			err = tag.Insert(r.ctx, r.exec, boil.Infer())
 			if err != nil {
 				return err
 			}
-			foundTag.Delete(r.ctx, r.exec)
 		}
 	}
 
@@ -178,6 +182,27 @@ func (r *ArticleRepository) Update(a *model.Article) (error) {
 		}
 	}
 
+	// tagsの削除はtaggingsの処理の後で（外部キー制約に引っかかるので）
+	for _, v := range removedtagNames {
+		foundTagging, err := dbModel.Taggings(dbModel.TaggingWhere.TagName.EQ(v), dbModel.TaggingWhere.ArticleID.NEQ(a.Id.String())).One(r.ctx, r.exec)
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+		if foundTagging == nil {
+			foundTag, err := dbModel.Tags(dbModel.TagWhere.Name.EQ(v)).One(r.ctx, r.exec)
+			if err != nil {
+				return err
+			}
+			rowsAff, err = foundTag.Delete(r.ctx, r.exec)
+			if err != nil {
+				return err
+			}
+			if rowsAff != 1 {
+				return errors.New(fmt.Sprintf("Number of rows affected by update is invalid %v", rowsAff))
+			}
+		}
+	}
+
 	return nil
 }
 
@@ -190,7 +215,48 @@ func (r *ArticleRepository) Delete(id uuid.UUID) (error) {
 	if dbArticle == nil {
 		return errors.New("対象の記事が見つかりません")
 	}
-	dbArticle.Delete(r.ctx, r.exec)
+
+	// タグの処理
+	foundDbTaggings, err := dbModel.Taggings(dbModel.TaggingWhere.ArticleID.EQ(dbArticle.ID)).All(r.ctx, r.exec)
+	// TODO: タグが元々ない場合の処理も確認
+	if err != nil {
+		return err
+	}
+	for _, v := range foundDbTaggings {
+		shouldDeleteTag := false
+		foundDbTagging, err := dbModel.Taggings(dbModel.TaggingWhere.TagName.EQ(v.TagName), dbModel.TaggingWhere.ArticleID.NEQ(dbArticle.ID)).One(r.ctx, r.exec)
+		if err != nil && err != sql.ErrNoRows {
+			return err
+		}
+		if foundDbTagging == nil {
+			shouldDeleteTag = true
+		}
+		rowsAff, err := v.Delete(r.ctx, r.exec)
+		if rowsAff != 1 {
+			return errors.New(fmt.Sprintf("Number of rows affected by tagging delete is invalid %d", rowsAff))
+		}
+		if shouldDeleteTag {
+			foundDbTag, err := dbModel.FindTag(r.ctx, r.exec, v.TagName)
+			if err != nil {
+				return err
+			}
+			rowsAff, err = foundDbTag.Delete(r.ctx, r.exec)
+			if err != nil {
+				return err
+			}
+			if rowsAff != 1 {
+				return errors.New(fmt.Sprintf("Number of rows affected by tag delete is invalid %d", rowsAff))
+			}
+		}
+	}
+
+	rowsAff, err := dbArticle.Delete(r.ctx, r.exec)
+	if err != nil {
+		return err
+	}
+	if rowsAff != 1 {
+		return errors.New(fmt.Sprintf("Number of rows affected by delete is invalid %v", rowsAff))
+	}
 	return nil
 }
 
