@@ -28,3 +28,9 @@ $ sqlboiler mysql -c sqlboiler.toml -o infra/database/model -p model --no-tests 
 ```
 $ docker-compose exec tech-blog-api go test -v ./...
 ```
+
+## Mockgen
+
+```
+$ mockgen -source=./domain/repository/category_repository.go -destination=./infra/mock/category_repository.go
+```

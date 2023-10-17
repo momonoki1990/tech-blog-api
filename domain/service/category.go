@@ -2,7 +2,6 @@ package service
 
 import (
 	"errors"
-	"fmt"
 
 	"github.com/momonoki1990/tech-blog-api/domain/model"
 	"github.com/momonoki1990/tech-blog-api/domain/repository"
@@ -22,12 +21,11 @@ func NewCategoryCreator(r repository.CategoryRepository) CategoryCreator {
 
 func (s *categoryCreator) Create(name string, displayOrder int) (*model.Category, error) {
 	c, err := s.CategoryRepository.FindOneByName(name)
-	fmt.Println(c)
 	if err != nil {
 		return nil, err
 	}
 	if c != nil {
-		return nil, errors.New("同じ名前のカテゴリがすでに登録されています")
+		return nil, errors.New("Category name is already registered")
 	}
 	c, err = model.NewCategory(name, displayOrder)
 	return c, err
