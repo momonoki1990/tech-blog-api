@@ -60,6 +60,9 @@ func (r *CategoryRepository) Find() ([]*model.Category, error) {
 	if err != nil {
 		return nil, err
 	}
+	if dbCategories == nil {
+		return []*model.Category{}, nil
+	}
 	categories, err := toCategories(dbCategories)
 	return categories, nil
 }

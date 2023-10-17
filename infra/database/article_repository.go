@@ -43,8 +43,14 @@ func (r *ArticleRepository)FindOneById(id uuid.UUID) (*model.Article, error) {
 
 func (r *ArticleRepository) Find() ([]*model.Article, error) {
 	dbArticles, err := dbModel.Articles().All(r.ctx, r.exec)
+	if err == sql.ErrNoRows {
+		return []*model.Article{}, nil
+	}
 	if err != nil {
 		return nil, err
+	}
+	if dbArticles == nil {
+		return []*model.Article{}, nil
 	}
 	articles, err := toArticles(dbArticles, r)
 	return articles, nil

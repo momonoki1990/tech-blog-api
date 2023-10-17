@@ -55,5 +55,12 @@ func main() {
     e.PUT("/category/:id", handler.NewCategoryUpdateHandler(cu).UpdateCategory)
     e.DELETE("/category/:id", handler.NewCategoryDeleteHandler(cu).DeleteCategory)
 
+    ar := database.NewArticleRepository(ctx, db)
+    au := usecase.NewArticleUseCase(ar)
+    e.GET("/articles", handler.NewArticleListHandler(au).ArticleList)
+    e.POST("/article", handler.NewArticleCreateHandler(au).CreateArticle)
+    e.PUT("/article/:id", handler.NewArticleUpdateHandler(au).UpdateArticle)
+    e.DELETE("/article/:id", handler.NewArticleDeleteHandler(au).DeleteArticle)
+
     e.Logger.Fatal(e.Start(":1323"))
 }

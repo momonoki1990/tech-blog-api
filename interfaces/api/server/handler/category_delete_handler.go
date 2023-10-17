@@ -1,6 +1,7 @@
 package handler
 
 import (
+	"fmt"
 	"net/http"
 
 	"github.com/google/uuid"
@@ -26,6 +27,7 @@ func (h *categoryDeleteHandler) DeleteCategory(c echo.Context) error {
 		return err
 	}
     if err := h.u.DeleteCategory(id); err != nil {
+		fmt.Println("👹ここ")
         return err
     }
     return c.String(http.StatusOK, "Delete category ok")

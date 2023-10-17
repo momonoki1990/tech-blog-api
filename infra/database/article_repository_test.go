@@ -451,6 +451,34 @@ func TestArticleFind(t *testing.T) {
 	}
 }
 
+func TestArticleFindWithNoData(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	_, err := dbModel.Articles().DeleteAll(ctx, tx)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	r := NewArticleRepository(ctx, tx)
+	actuals, err := r.Find()
+	if err != nil {
+		panic(err)
+	}
+
+	// Check
+	if actuals == nil {
+		t.Errorf("actuals: Expected %s, but got %v", "not nil", actuals)
+	}
+	if len(actuals) != 0 {
+		t.Errorf("len(actuals): Expected %d, but got %d", 0, len(actuals))
+	}
+}
+
 func TestArticleInsert(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()

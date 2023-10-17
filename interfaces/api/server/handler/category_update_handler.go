@@ -27,7 +27,6 @@ func NewCategoryUpdateHandler(u usecase.CategoryUseCase) CategoryUpdateHandler {
 }
 
 func (h *categoryUpdateHandler) UpdateCategory(c echo.Context) error {
-    fmt.Println("👹categoryUpdateHandler.UpdateCategory called")
 	id, err := uuid.Parse(c.Param("id"))
 	if err != nil {
 		return err

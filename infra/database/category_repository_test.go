@@ -179,6 +179,94 @@ func TestCategoryFind(t *testing.T) {
 	}
 }
 
+func TestCategoryFindWithNoData(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	_, err := dbModel.Categories().DeleteAll(ctx, tx)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	r := NewCategoryRepository(ctx, tx)
+	actuals, err := r.Find()
+	if err != nil {
+		panic(err)
+	}
+
+	// Check
+	if actuals == nil {
+		t.Errorf("actuals: Expected %s, but got %v", "not nil", actuals)
+	}
+	if len(actuals) != 0 {
+		t.Errorf("len(actuals): Expected %d, but got %d", 0, len(actuals))
+	}
+}
+
+func TestCategoryInsert(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	r := NewCategoryRepository(ctx, tx)
+	creator := service.NewCategoryCreator(r)
+	category, err := creator.Create("Name1", 1)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	err = r.Insert(category)
+	if err != nil {
+		panic(err)
+	}
+
+	// Check
+	dbCategory1, err := dbModel.FindCategory(ctx, tx, category.Id.String())
+	if err != nil {
+		panic(err)
+	}
+	if dbCategory1.Name != "Name1" {
+		t.Errorf("dbCategory1.Name: Expected %s, but got %s", "Name1", dbCategory1.Name)
+	}
+	if dbCategory1.DisplayOrder.Int != 1 {
+		t.Errorf("dbCategory1.DisplayOrder.Int: Expected %d, but got %d", 1, dbCategory1.DisplayOrder.Int)
+	}
+}
+
+func TestCategoryInsertAlreadyExisting(t *testing.T) {
+	db := GetTestConnection()
+	ctx := context.TODO()
+	tx := GetTestTransaction(db, ctx)
+	defer tx.Rollback()
+
+	// Prepare data
+	r := NewCategoryRepository(ctx, tx)
+	creator := service.NewCategoryCreator(r)
+	category, err := creator.Create("Name1", 1)
+	if err != nil {
+		panic(err)
+	}
+	err = r.Insert(category)
+	if err != nil {
+		panic(err)
+	}
+
+	// Execute
+	err = r.Insert(category)
+
+	// Check
+	if err == nil {
+		t.Errorf("err of r.Insert(category): Expected %v, but got %v", "not nil", err)
+	}
+}
+
 func TestCategoryUpdate(t *testing.T) {
 	db := GetTestConnection()
 	ctx := context.TODO()
