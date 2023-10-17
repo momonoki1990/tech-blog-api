@@ -86,15 +86,17 @@ func generateTags(tagNames []string) []Tag {
 }
 
 func (a *Article) SetStatus (s Status) error {
-	if s == Draft {
-		a.Status = Draft
-		a.PublishedAt = nil
-	} else if s == Published {
-		a.Status = Published
-		now := time.Now()
-		a.PublishedAt = &now
-	} else {
-		return errors.New("Invalid status")
+	switch s {
+		case Draft:
+			a.Status = Draft
+		case Published:
+			a.Status = Published
+			if a.PublishedAt == nil {
+				now := time.Now()
+				a.PublishedAt = &now
+			}
+		default:
+			return errors.New("Invalid status")
 	}
 	return nil
 }

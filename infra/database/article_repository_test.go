@@ -458,10 +458,16 @@ func TestArticleFindWithNoData(t *testing.T) {
 	defer tx.Rollback()
 
 	// Prepare data
-	_, err := dbModel.Articles().DeleteAll(ctx, tx)
+	// NOTE: Can not delete only categories becase of foreign key constraint(ex. taggings references articles)
+	_, err := dbModel.Taggings().DeleteAll(ctx, tx)
 	if err != nil {
 		panic(err)
 	}
+	_, err = dbModel.Articles().DeleteAll(ctx, tx)
+	if err != nil {
+		panic(err)
+	}
+	
 
 	// Execute
 	r := NewArticleRepository(ctx, tx)
@@ -792,8 +798,8 @@ func TestArticleUpdate(t *testing.T) {
 	if dbArticle1Check2.Status != "Draft" {
 		t.Errorf("dbArticle1Check2.Status: Expected %s, but got %s", "Draft", dbArticle1Check2.Status)
 	}
-	if dbArticle1Check2.PublishedAt.Valid {
-		t.Errorf("dbArticle1Check2.PublishedAt: Expected %v, but got %v", "Valid is false", dbArticle1Check2.PublishedAt)
+	if !dbArticle1Check2.PublishedAt.Valid {
+		t.Errorf("dbArticle1Check2.PublishedAt: Expected %v, but got %v", "Valid is true", dbArticle1Check2.PublishedAt)
 	}
 }
 

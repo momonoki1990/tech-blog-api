@@ -186,7 +186,16 @@ func TestCategoryFindWithNoData(t *testing.T) {
 	defer tx.Rollback()
 
 	// Prepare data
-	_, err := dbModel.Categories().DeleteAll(ctx, tx)
+	// NOTE: Can not delete only categories becase of foreign key constraint(ex. taggings references articles, articles references categories)
+	_, err := dbModel.Taggings().DeleteAll(ctx, tx)
+	if err != nil {
+		panic(err)
+	}
+	_, err = dbModel.Articles().DeleteAll(ctx, tx)
+	if err != nil {
+		panic(err)
+	}
+	_, err = dbModel.Categories().DeleteAll(ctx, tx)
 	if err != nil {
 		panic(err)
 	}

@@ -138,6 +138,7 @@ func TestSetStatus(t *testing.T) {
 	if article1.PublishedAt == nil {
 		t.Errorf("article1.PublishedAt: Expected %v, but got %v", "not nil", article1.PublishedAt)
 	}
+	firstPublishedAt := *article1.PublishedAt
 
 	// Execute2
 	article1.SetStatus(Draft)
@@ -146,7 +147,15 @@ func TestSetStatus(t *testing.T) {
 	if article1.Status != Draft {
 		t.Errorf("article1.Status: Expected %d, but got %d", Draft, article1.Status)
 	}
-	if article1.PublishedAt != nil {
-		t.Errorf("article1.PublishedAt: Expected %v, but got %v", nil, article1.PublishedAt)
+	if article1.PublishedAt == nil {
+		t.Errorf("article1.PublishedAt: Expected %s, but got %v", "not nil", article1.PublishedAt)
+	}
+
+	// Execute3
+	article1.SetStatus(Published)
+
+	// Check3
+	if !article1.PublishedAt.Equal(firstPublishedAt) {
+		t.Errorf("article1.PublishedAt: Expected %s, but got %v", firstPublishedAt, *article1.PublishedAt)
 	}
 }
