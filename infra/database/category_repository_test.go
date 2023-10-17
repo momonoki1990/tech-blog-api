@@ -6,6 +6,7 @@ import (
 
 	"github.com/google/uuid"
 	"github.com/momonoki1990/tech-blog-api/domain/model"
+	"github.com/momonoki1990/tech-blog-api/domain/service"
 	dbModel "github.com/momonoki1990/tech-blog-api/infra/database/model"
 	"github.com/volatiletech/null/v8"
 	"github.com/volatiletech/sqlboiler/v4/boil"
@@ -186,7 +187,8 @@ func TestCategoryUpdate(t *testing.T) {
 
 	// Prepare data
 	r := NewCategoryRepository(ctx, tx)
-	category, err := model.NewCategory("Name1", 1)
+	creator := service.NewCategoryCreator(r)
+	category, err := creator.Create("Name1", 1)
 	if err != nil {
 		panic(err)
 	}
@@ -227,7 +229,8 @@ func TestCategoryUpdateNotExisting(t *testing.T) {
 
 	// Prepare data
 	r := NewCategoryRepository(ctx, tx)
-	category, err := model.NewCategory("Name1", 1)
+	creator := service.NewCategoryCreator(r)
+	category, err := creator.Create("Name1", 1)
 	if err != nil {
 		panic(err)
 	}
@@ -254,7 +257,8 @@ func TestCategoryDelete(t *testing.T) {
 
 	// Prepare data
 	r := NewCategoryRepository(ctx, tx)
-	category, err := model.NewCategory("Name1", 1)
+	creator := service.NewCategoryCreator(r)
+	category, err := creator.Create("Name1", 1)
 	if err != nil {
 		panic(err)
 	}
@@ -287,7 +291,8 @@ func TestCategoryDeleteNotExisting(t *testing.T) {
 
 	// Prepare data
 	r := NewCategoryRepository(ctx, tx)
-	category, err := model.NewCategory("Name1", 1)
+	creator := service.NewCategoryCreator(r)
+	category, err := creator.Create("Name1", 1)
 	if err != nil {
 		panic(err)
 	}
