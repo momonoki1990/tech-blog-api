@@ -103,7 +103,7 @@ func TestSetTags(t *testing.T) {
 	}
 
 	// Execute
-	article1.SetTags([]string{"Tag3", "Tag4"})
+	article1.SetTags([]string{"Tag3", "Tag4", "Tag4"})
 
 	// Check
 	if len(article1.Tags) != 2 {

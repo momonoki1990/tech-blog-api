@@ -76,11 +76,15 @@ func (a *Article) SetTags (tagNames []string) {
 
 func generateTags(tagNames []string) []Tag {
 	var tags []Tag
-	for i := 0; i < len(tagNames); i++ {
-		tag := Tag{
-			Name: tagNames[i],
+	tagMap := make(map[string]bool)
+	for _, v := range tagNames {
+		if !tagMap[v] {
+			tagMap[v] = true
+			tag := Tag{
+				Name: v,
+			}
+			tags = append(tags, tag)
 		}
-		tags = append(tags, tag)
 	}
 	return tags
 }
