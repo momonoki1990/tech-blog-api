@@ -18,10 +18,11 @@ type CategoryUseCase interface {
 
 type categoryUseCase struct {
     repository.CategoryRepository
+	service.CategoryCreator
 }
 
-func NewCategoryUseCase(r repository.CategoryRepository) CategoryUseCase {
-    return &categoryUseCase{r}
+func NewCategoryUseCase(r repository.CategoryRepository, s service.CategoryCreator) CategoryUseCase {
+    return &categoryUseCase{r, s}
 }
 
 func (u *categoryUseCase) GetCategoryList() ([]*model.Category, error) {
@@ -30,8 +31,7 @@ func (u *categoryUseCase) GetCategoryList() ([]*model.Category, error) {
 }
 
 func (u *categoryUseCase) RegisterCategory(name string, displayOrder int) (error) {
-	creator := service.NewCategoryCreator(u.CategoryRepository)
-	c, err := creator.Create(name, displayOrder)
+	c, err := u.CategoryCreator.Create(name, displayOrder)
 	if err != nil {
 		return err
 	}
@@ -45,7 +45,7 @@ func (u *categoryUseCase) UpdateCategory(id uuid.UUID, name string, displayOrder
 		return err
 	}
 	if c == nil {
-		return errors.New("変更対象のカテゴリが見つかりませんでした")
+		return errors.New("Category to update was not found")
 	}
 	c.Name = name
 	c.DisplayOrder = displayOrder

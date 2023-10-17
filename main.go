@@ -12,6 +12,7 @@ import (
 	_ "github.com/go-sql-driver/mysql"
 
 	"github.com/momonoki1990/tech-blog-api/application/usecase"
+	"github.com/momonoki1990/tech-blog-api/domain/service"
 	"github.com/momonoki1990/tech-blog-api/infra/database"
 	"github.com/momonoki1990/tech-blog-api/interfaces/api/server/handler"
 
@@ -47,7 +48,8 @@ func main() {
         return c.String(http.StatusOK, "Hello, World!")
     })
     cr := database.NewCategoryRepository(ctx, db)
-    cu := usecase.NewCategoryUseCase(cr)
+    cc := service.NewCategoryCreator(cr)
+    cu := usecase.NewCategoryUseCase(cr, cc)
     e.GET("/categories", handler.NewCategoryListHandler(cu).CategoryList)
     e.POST("/category", handler.NewCategoryCreateHandler(cu).CreateCategory)
     e.PUT("/category/:id", handler.NewCategoryUpdateHandler(cu).UpdateCategory)

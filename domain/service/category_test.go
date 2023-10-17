@@ -15,7 +15,7 @@ func TestCategoryCreatorCreate (t *testing.T) {
 	mockCategoryRepository := mock_repo.NewMockCategoryRepository(mockCtrl)
 	creator := NewCategoryCreator(mockCategoryRepository)
 
-	// Expected
+	// Expected & Mock
 	mockCategoryRepository.EXPECT().FindOneByName("Name1").Return(nil, nil)
 
 	// Execute1
