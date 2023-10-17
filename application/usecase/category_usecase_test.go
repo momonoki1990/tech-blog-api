@@ -16,13 +16,13 @@ func TestGetCategoryList(t *testing.T) {
 	// Prepare1
 	mockCategoryRepository := mock_repo.NewMockCategoryRepository(mockCtrl)
 	mockCategoryCreator := mock_service.NewMockCategoryCreator(mockCtrl)
-	u := NewCategoryUseCase(mockCategoryRepository, mockCategoryCreator)
-
+	
 	// Expected & Mock
 	categories := []*model.Category{}
 	mockCategoryRepository.EXPECT().Find().Return(categories, nil)
-
+	
 	// Execute
+	u := NewCategoryUseCase(mockCategoryRepository, mockCategoryCreator)
 	actual, err := u.GetCategoryList()
 	if err != nil {
 		panic(err)
@@ -135,6 +135,6 @@ func TestDeleteCategory(t *testing.T) {
 
 	// Check
 	if err != nil {
-		t.Errorf("err of u.UpdateCategory(categoryId): Expected %v, but got %v", nil, err)
+		t.Errorf("err of u.DeleteCategory(categoryId): Expected %v, but got %v", nil, err)
 	}
 }
