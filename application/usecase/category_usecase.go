@@ -11,7 +11,7 @@ import (
 
 type CategoryUseCase interface {
     GetCategoryList() ([]*model.Category, error)
-    RegisterCategory(name string, displayOrder int) (error)
+    RegisterCategory(name string, displayOrder int) (string, error)
 	UpdateCategory(id uuid.UUID, name string, displayOrder int) (error)
 	DeleteCategory(id uuid.UUID) (error)
 }
@@ -30,13 +30,16 @@ func (u *categoryUseCase) GetCategoryList() ([]*model.Category, error) {
 	return categories, err
 }
 
-func (u *categoryUseCase) RegisterCategory(name string, displayOrder int) (error) {
+func (u *categoryUseCase) RegisterCategory(name string, displayOrder int) (string, error) {
 	c, err := u.CategoryCreator.Create(name, displayOrder)
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = u.CategoryRepository.Insert(c)
-	return err
+	if err != nil {
+		return "", err
+	}
+	return c.Id.String(), nil
 }
 
 func (u *categoryUseCase) UpdateCategory(id uuid.UUID, name string, displayOrder int) (error) {

@@ -244,6 +244,15 @@ func TestArticleFind(t *testing.T) {
 	defer tx.Rollback()
 
 	// Prepare data
+	_, err := dbModel.Taggings().DeleteAll(ctx, tx)
+	if err != nil {
+		panic(err)
+	}
+	_, err = dbModel.Articles().DeleteAll(ctx, tx)
+	if err != nil {
+		panic(err)
+	}
+
 	n := time.Now()
 	now := n.Truncate(time.Second)
 
@@ -252,7 +261,7 @@ func TestArticleFind(t *testing.T) {
 		Name: "Category1",
 		DisplayOrder: null.IntFrom(99),
 	}
-	err := dbCategory1.Insert(ctx, tx, boil.Infer())
+	err = dbCategory1.Insert(ctx, tx, boil.Infer())
 	if err != nil {
 		panic(err)
 	}

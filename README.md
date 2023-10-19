@@ -5,6 +5,9 @@ https://blog.recruit.co.jp/rls/2018-03-16-go-ddd/
 
 ```
 $ docker-compose up
+
+# Connect to mysql container
+$ docker-compose exec db mysql -u docker -p
 ```
 
 ## sql-migrate

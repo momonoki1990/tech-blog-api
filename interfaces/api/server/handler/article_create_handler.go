@@ -17,6 +17,10 @@ type CreateArticleBody struct {
 	ShouldPublish bool `json:"shouldPublish"`
 }
 
+type CreateArticleResponseBody struct {
+    ArticleId string `json:"articleId"`
+}
+
 type ArticleCreateHandler interface {
     CreateArticle(c echo.Context) error
 }
@@ -40,8 +44,10 @@ func (h *articleCreateHandler) CreateArticle(c echo.Context) error {
 		fmt.Print(err)
         return c.String(http.StatusBadRequest, "Bad request")
 	}
-    if err := h.u.RegisterArticle(body.Title, body.Content, categoryId, body.TagNames, body.ShouldPublish); err != nil {
+    articleId, err := h.u.RegisterArticle(body.Title, body.Content, categoryId, body.TagNames, body.ShouldPublish)
+    if err != nil {
         return err
     }
-    return c.String(http.StatusOK, "Create article ok")
+    responseBody := &CreateArticleResponseBody{ArticleId: articleId}
+    return c.JSON(http.StatusCreated, responseBody)
 }

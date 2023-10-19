@@ -10,7 +10,7 @@ import (
 
 type ArticleUseCase interface {
     GetArticleList() ([]*model.Article, error)
-    RegisterArticle(title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (error)
+    RegisterArticle(title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (string, error)
 	UpdateArticle(id uuid.UUID, title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (error)
 	DeleteArticle(id uuid.UUID) (error)
 }
@@ -28,13 +28,17 @@ func (u *articleUseCase) GetArticleList() ([]*model.Article, error) {
 	return articles, err
 }
 
-func (u *articleUseCase) RegisterArticle(title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (error) {
+func (u *articleUseCase) RegisterArticle(title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (string, error) {
 	article, err := model.NewArticle(title, content, categoryId, tagNames, shouldPublish)
 	if err != nil {
-		return err
+		return "", err
 	}
 	err = u.ArticleRepository.Insert(article)
-	return err
+	if err != nil {
+		return "", err
+	}
+	articleId := article.Id.String()
+	return articleId, nil
 }
 
 func (u *articleUseCase) UpdateArticle(id uuid.UUID, title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (error) {

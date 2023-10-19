@@ -49,11 +49,14 @@ func TestRegisterArticle(t *testing.T) {
 
 	// Execute
 	u := NewArticleUseCase(mockArticleRepository)
-	err = u.RegisterArticle("Title1", "Content1", categoryId, []string{"Tag1", "Tag2"}, false)
+	id, err := u.RegisterArticle("Title1", "Content1", categoryId, []string{"Tag1", "Tag2"}, false)
 
 	// Check
 	if err != nil {
 		t.Errorf("err of u.RegisterArticle('Title1', 'Content1', categoryId, []string{'Tag1', 'Tag2'}, false): Expected %v, but got %v", nil, err)
+	}
+	if id == "" {
+		t.Errorf("id of u.RegisterArticle('Title1', 'Content1', categoryId, []string{'Tag1', 'Tag2'}, false): Expected %s, but got %v", "not empty string", id)
 	}
 }
 

@@ -26,9 +26,9 @@ services:
       - DB_USER=docker
       - DB_PASSWORD=dockerpass
 
-    # deploy:
-    #   restart_policy:
-    #     condition: on-failure
+    deploy:
+      restart_policy:
+        condition: on-failure
   db:
     image: mysql:8.1.0
     container_name: db

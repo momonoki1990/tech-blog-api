@@ -12,6 +12,9 @@ type CreateCategoryBody struct {
     Name string `json:"name"`
     DisplayOrder int `json:"displayOrder"`
 }
+type CreateCategoryResponseBody struct {
+    CategoryId string `json:"categoryId"`
+}
 
 type CategoryCreateHandler interface {
     CreateCategory(c echo.Context) error
@@ -31,8 +34,10 @@ func (h *categoryCreateHandler) CreateCategory(c echo.Context) error {
         fmt.Print(err)
         return c.String(http.StatusBadRequest, "Bad request")
     }
-    if err := h.u.RegisterCategory(body.Name, body.DisplayOrder); err != nil {
+    categoryId, err := h.u.RegisterCategory(body.Name, body.DisplayOrder)
+    if err != nil {
         return err
     }
-    return c.String(http.StatusOK, "Create category ok")
+    responseBody := &CreateCategoryResponseBody{CategoryId: categoryId}
+    return c.JSON(http.StatusCreated, responseBody)
 }

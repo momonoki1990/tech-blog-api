@@ -52,11 +52,14 @@ func TestRegisterCategory(t *testing.T) {
 
 	// Execute
 	u := NewCategoryUseCase(mockCategoryRepository, mockCategoryCreator)
-	err = u.RegisterCategory("Name1", 1)
+	id, err := u.RegisterCategory("Name1", 1)
 
 	// Check
 	if err != nil {
 		t.Errorf("err of u.RegisterCategory('Name1', 1): Expected %v, but got %v", nil, err)
+	}
+	if id == "" {
+		t.Errorf("id of u.RegisterCategory('Name1', 1): Expected %s, but got %s", "not empty string", id)
 	}
 }
 
