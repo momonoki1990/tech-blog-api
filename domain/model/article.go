@@ -8,7 +8,7 @@ import (
 )
 
 type Tag struct {
-	Name string
+	Name string `json:"name"`
 }
 
 type Status int
@@ -30,15 +30,15 @@ func (s Status) String() string {
 }
 
 type Article struct {
-	Id uuid.UUID
-	Title string
-	Content string
-	CategoryId uuid.UUID
-	Tags []Tag
-	PublishedAt *time.Time
-	Status Status
-	CreatedAt time.Time
-	UpdatedAt time.Time
+	Id uuid.UUID `json:"id"`
+	Title string `json:"title"`
+	Content string `json:"content"`
+	CategoryId uuid.UUID `json:"categoryId"`
+	Tags []Tag `json:"tags"`
+	PublishedAt *time.Time `json:"publishedAt"`
+	Status Status `json:"status"`
+	CreatedAt time.Time `json:"createdAt"`
+	UpdatedAt time.Time `json:"updatedAt"`
 }
 
 func NewArticle (title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (*Article, error) {

@@ -8,9 +8,9 @@ import (
 )
 
 type Category struct {
-	Id uuid.UUID
-	Name string
-	DisplayOrder int
+	Id uuid.UUID `json:"id"`
+	Name string `json:"name"`
+	DisplayOrder int `json:"displayOrder"`
 }
 
 func NewCategory(name string, displayOrder int) (*Category, error) {

@@ -9,6 +9,7 @@ import (
 )
 
 type ArticleUseCase interface {
+    GetArticle(id uuid.UUID) (*model.Article, error)
     GetArticleList() ([]*model.Article, error)
     RegisterArticle(title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (string, error)
 	UpdateArticle(id uuid.UUID, title string, content string, categoryId uuid.UUID, tagNames []string, shouldPublish bool) (error)
@@ -21,6 +22,11 @@ type articleUseCase struct {
 
 func NewArticleUseCase(r repository.ArticleRepository) ArticleUseCase {
     return &articleUseCase{r}
+}
+
+func (u *articleUseCase) GetArticle(id uuid.UUID) (*model.Article, error) {
+    article, err := u.ArticleRepository.FindOneById(id)
+	return article, err
 }
 
 func (u *articleUseCase) GetArticleList() ([]*model.Article, error) {

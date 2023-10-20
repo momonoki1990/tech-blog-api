@@ -57,6 +57,7 @@ func main() {
 
     ar := database.NewArticleRepository(ctx, db)
     au := usecase.NewArticleUseCase(ar)
+    e.GET("/article/:id", handler.NewArticleGetHandler(au).ArticleGet)
     e.GET("/articles", handler.NewArticleListHandler(au).ArticleList)
     e.POST("/article", handler.NewArticleCreateHandler(au).CreateArticle)
     e.PUT("/article/:id", handler.NewArticleUpdateHandler(au).UpdateArticle)
