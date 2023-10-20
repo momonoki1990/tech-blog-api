@@ -1,0 +1,248 @@
+openapi: 3.0.0
+info:
+  title: Tech Blog API
+  version: "1.0.0"
+
+paths:
+  /articles/{articleId}:
+    get:
+      tags:
+        - articles
+      summary: Get article.
+      parameters: []
+      responses:
+        "200":
+          description: A JSON of Article model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Article"
+  /articles:
+    get:
+      tags:
+        - articles
+      summary: Get all articles.
+      parameters: []
+      responses:
+        "200":
+          description: A JSON array of Article model
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Article"
+  /article:
+    post:
+      tags:
+        - articles
+      summary: Create a new Article
+      parameters: []
+      requestBody:
+        description: article to create
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateArticleBody"
+      responses:
+        "201":
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categoryId:
+                    type: string
+                    format: uuid
+  /article/{articleId}:
+    put:
+      tags:
+        - articles
+      summary: Update artile
+      parameters: []
+      requestBody:
+        description: article to update
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateArticleBody"
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags:
+        - articles
+      summary: Delete article
+      parameters: []
+      responses:
+        "200":
+          description: OK
+  /categories/{categoryId}:
+    get:
+      tags:
+        - categories
+      summary: Get category.
+      parameters: []
+      responses:
+        "200":
+          description: A JSON of Category model
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Category"
+  /categories:
+    get:
+      tags:
+        - categories
+      summary: Get all categories.
+      parameters: []
+      responses:
+        "200":
+          description: A JSON array of Category model
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Category"
+  /category:
+    post:
+      tags:
+        - categories
+      summary: Create a new Category
+      parameters: []
+      requestBody:
+        description: category to create
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryBody"
+      responses:
+        "201":
+          description: CREATED
+          content:
+            application/json:
+              schema:
+                type: object
+                properties:
+                  categoryId:
+                    type: string
+                    format: uuid
+  /category/{categoryId}:
+    put:
+      tags:
+        - categories
+      summary: Update artile
+      parameters: []
+      requestBody:
+        description: category to update
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CreateCategoryBody"
+      responses:
+        "200":
+          description: OK
+    delete:
+      tags:
+        - categories
+      summary: Delete category
+      parameters: []
+      responses:
+        "200":
+          description: OK
+components:
+  schemas:
+    Article:
+      type: object
+      required:
+        - id
+        - title
+        - content
+        - categoryId
+        - tags
+        - publishedAt
+        - status
+        - createdAt
+        - updatedAt
+      properties:
+        id:
+          type: string
+          format: uuid
+        title:
+          type: string
+        content:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        tags:
+          type: array
+          items:
+            $ref: "#/components/schemas/Tag"
+        publishedAt:
+          type: string
+          format: date-time
+        status:
+          type: string
+          enum: [Draft, Published]
+        createdAt:
+          type: string
+          format: date-time
+        updatedAt:
+          type: string
+          format: date-time
+    Tag:
+      type: object
+      required:
+        - name
+      properties:
+        name:
+          type: string
+    Category:
+      type: object
+      required:
+        - id
+        - name
+        - displayOrder
+      properties:
+        id:
+          type: string
+          format: uuid
+        name:
+          type: string
+        displayOrder:
+          type: number
+    CreateArticleBody:
+      type: object
+      required:
+        - title
+        - content
+        - categoryId
+        - tagNames
+        - shouldPublish
+      properties:
+        title:
+          type: string
+        content:
+          type: string
+        categoryId:
+          type: string
+          format: uuid
+        tagNames:
+          type: array
+          items:
+            type: string
+        shouldPublish:
+          type: boolean
+    CreateCategoryBody:
+      type: object
+      required:
+        - name
+        - displayOrder
+      properties:
+        name:
+          type: string
+        displayOrder:
+          type: number
